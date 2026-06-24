@@ -1,0 +1,369 @@
+/* ===== Design tokens ===== */
+:root {
+  --ink: #1B2430;
+  --paper: #FBF8F2;
+  --paper-line: #E4DFD3;
+  --stamp: #B0413E;
+  --slate: #5C6470;
+  --slate-soft: #8A8F98;
+  --ok-green: #3D6B4F;
+
+  --font-serif: "Source Serif 4", Georgia, serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", monospace;
+
+  --radius: 3px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Faint ledger-paper texture */
+body {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 27px,
+    var(--paper-line) 27px,
+    var(--paper-line) 28px
+  );
+  background-attachment: local;
+}
+
+body.no-rule { background-image: none; }
+
+a { color: inherit; text-decoration: none; }
+
+h1, h2, h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  margin: 0 0 0.4em 0;
+  letter-spacing: -0.01em;
+}
+
+.mono { font-family: var(--font-mono); }
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--slate);
+}
+
+/* ===== Layout shell ===== */
+.shell {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+}
+
+.topbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 20px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.topbar .brand {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.topbar nav {
+  display: flex;
+  gap: 20px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.topbar nav a {
+  color: var(--slate);
+  border-bottom: 1px solid transparent;
+  padding-bottom: 4px;
+}
+.topbar nav a:hover, .topbar nav a.active {
+  color: var(--ink);
+  border-bottom-color: var(--stamp);
+}
+
+/* ===== Cards / surfaces ===== */
+.card {
+  background: #fff;
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+
+.card + .card { margin-top: 16px; }
+
+/* ===== Forms ===== */
+label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--slate);
+  margin-bottom: 6px;
+}
+
+input, select, textarea {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius);
+  color: var(--ink);
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--stamp);
+  outline-offset: 1px;
+  border-color: var(--stamp);
+}
+
+.field { margin-bottom: 16px; }
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 560px) {
+  .field-row { grid-template-columns: 1fr; }
+}
+
+/* ===== Buttons ===== */
+.btn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 11px 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn:hover { background: #2A3647; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--paper-line);
+}
+.btn-ghost:hover { border-color: var(--ink); background: transparent; }
+
+.btn-stamp {
+  background: var(--stamp);
+  border-color: var(--stamp);
+  color: #fff;
+}
+.btn-stamp:hover { background: #94322f; }
+
+.btn-danger {
+  background: transparent;
+  color: var(--stamp);
+  border-color: var(--paper-line);
+}
+.btn-danger:hover { border-color: var(--stamp); }
+
+/* ===== Error / empty states ===== */
+.error-banner {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: #FBEAEA;
+  border: 1px solid var(--stamp);
+  color: #7A2A28;
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--slate);
+}
+.empty-state h3 { color: var(--ink); }
+
+/* ===== Lists ===== */
+.list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--paper-line);
+}
+.list-row:last-child { border-bottom: none; }
+
+.list-row .primary { font-weight: 600; }
+.list-row .secondary { color: var(--slate); font-size: 13px; }
+.list-row .amount { font-family: var(--font-mono); font-size: 16px; }
+
+.list-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+/* ===== Status pill (small, list contexts) ===== */
+.status-pill {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 12px;
+  border: 1px solid currentColor;
+}
+.status-pill.DRAFT    { color: var(--slate); }
+.status-pill.SENT     { color: #8A6D1F; }
+.status-pill.PAID     { color: var(--ok-green); }
+.status-pill.OVERDUE  { color: var(--stamp); }
+.status-pill.CANCELLED{ color: var(--slate-soft); }
+
+/* ===== The stamp (signature element) ===== */
+.stamp {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  width: 110px;
+  height: 110px;
+  border: 3px solid var(--stamp);
+  border-radius: 50%;
+  color: var(--stamp);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.08em;
+  transform: rotate(-12deg);
+  opacity: 0.85;
+  text-align: center;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+.stamp::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid var(--stamp);
+  border-radius: 50%;
+}
+.stamp.DRAFT { border-color: var(--slate-soft); color: var(--slate-soft); }
+.stamp.DRAFT::before { border-color: var(--slate-soft); }
+.stamp.SENT { border-color: #8A6D1F; color: #8A6D1F; }
+.stamp.SENT::before { border-color: #8A6D1F; }
+.stamp.PAID { border-color: var(--ok-green); color: var(--ok-green); }
+.stamp.PAID::before { border-color: var(--ok-green); }
+
+/* ===== Invoice document ===== */
+.invoice-doc {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--paper-line);
+  padding: 40px;
+  overflow: hidden;
+}
+
+.invoice-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 36px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.invoice-head .num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--slate);
+}
+
+table.line-items {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
+}
+table.line-items th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--slate);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--ink);
+}
+table.line-items th.num, table.line-items td.num { text-align: right; }
+table.line-items td {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--paper-line);
+  font-size: 14px;
+}
+table.line-items td.num { font-family: var(--font-mono); }
+
+.totals {
+  margin-left: auto;
+  width: 260px;
+}
+.totals .row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+.totals .row.grand {
+  border-top: 2px solid var(--ink);
+  margin-top: 6px;
+  padding-top: 12px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* ===== Utility ===== */
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.muted { color: var(--slate); }
+.center-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-card { width: 100%; max-width: 380px; }
+.text-link {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--slate);
+  border-bottom: 1px solid var(--paper-line);
+}
+.text-link:hover { color: var(--stamp); border-bottom-color: var(--stamp); }

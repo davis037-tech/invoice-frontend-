@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Clients — Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar" id="topbar"></div>
+
+    <div class="list-head">
+      <h1 style="font-size:22px;">Clients</h1>
+      <button class="btn" id="new-client-btn">+ New client</button>
+    </div>
+
+    <div id="error-box"></div>
+
+    <!-- New / edit client form, hidden until needed -->
+    <div class="card" id="client-form-card" style="display:none; margin-bottom:20px;">
+      <form id="client-form">
+        <input type="hidden" id="client-id" />
+        <div class="field-row">
+          <div class="field">
+            <label for="name">Name</label>
+            <input id="name" name="name" type="text" required />
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" required />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="phone">Phone <span class="muted">(optional)</span></label>
+            <input id="phone" name="phone" type="text" />
+          </div>
+          <div class="field">
+            <label for="address">Address <span class="muted">(optional)</span></label>
+            <input id="address" name="address" type="text" />
+          </div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-stamp" type="submit" id="client-save-btn">Save client</button>
+          <button class="btn btn-ghost" type="button" id="client-cancel-btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card" id="clients-list">
+      <p class="muted">Loading…</p>
+    </div>
+  </div>
+
+<script src="api.js"></script>
+<script src="nav.js"></script>
+<script>
+Auth.requireLogin();
+renderTopbar("clients");
+
+const listEl = document.getElementById("clients-list");
+const errorBox = document.getElementById("error-box");
+const formCard = document.getElementById("client-form-card");
+const form = document.getElementById("client-form");
+
+document.getElementById("new-client-btn").addEventListener("click", () => openForm(null));
+document.getElementById("client-cancel-btn").addEventListener("click", closeForm);
+
+function openForm(client) {
+  form.reset();
+  document.getElementById("client-id").value = client ? client.id : "";
+  if (client) {
+    form.name.value = client.name;
+    form.email.value = client.email;
+    form.phone.value = client.phone || "";
+    form.address.value = client.address || "";
+  }
+  formCard.style.display = "block";
+  document.getElementById("client-save-btn").textContent = client ? "Update client" : "Save client";
+}
+
+function closeForm() {
+  formCard.style.display = "none";
+  form.reset();
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  errorBox.innerHTML = "";
+  const id = document.getElementById("client-id").value;
+  const payload = {
+    name: form.name.value.trim(),
+    email: form.email.value.trim(),
+    phone: form.phone.value.trim() || null,
+    address: form.address.value.trim() || null,
+  };
+  try {
+    if (id) {
+      await apiFetch(`/clients/${id}`, { method: "PUT", body: payload });
+    } else {
+      await apiFetch(`/clients/`, { method: "POST", body: payload });
+    }
+    closeForm();
+    loadClients();
+  } catch (err) {
+    showError(errorBox, err.message);
+  }
+});
+
+async function deleteClient(id) {
+  if (!confirm("Delete this client? This can't be undone.")) return;
+  try {
+    await apiFetch(`/clients/${id}`, { method: "DELETE" });
+    loadClients();
+  } catch (err) {
+    showError(errorBox, err.message);
+  }
+}
+
+async function loadClients() {
+  try {
+    const data = await apiFetch("/clients/");
+    renderClients(data.data);
+  } catch (err) {
+    showError(errorBox, err.message);
+  }
+}
+
+function renderClients(clients) {
+  if (!clients.length) {
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <h3>No clients yet</h3>
+        <p>Add your first client to start sending invoices.</p>
+      </div>`;
+    return;
+  }
+  listEl.innerHTML = clients.map(c => `
+    <div class="list-row">
+      <div>
+        <div class="primary">${escapeHtml(c.name)}</div>
+        <div class="secondary">${escapeHtml(c.email)}${c.phone ? ' · ' + escapeHtml(c.phone) : ''}</div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-ghost" data-edit="${c.id}">Edit</button>
+        <button class="btn btn-danger" data-delete="${c.id}">Delete</button>
+      </div>
+    </div>
+  `).join("");
+
+  listEl.querySelectorAll("[data-edit]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const client = clients.find(c => c.id === btn.dataset.edit);
+      openForm(client);
+    });
+  });
+  listEl.querySelectorAll("[data-delete]").forEach(btn => {
+    btn.addEventListener("click", () => deleteClient(btn.dataset.delete));
+  });
+}
+
+loadClients();
+</script>
+</body>
+</html>

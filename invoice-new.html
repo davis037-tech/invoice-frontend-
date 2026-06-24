@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>New invoice — Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar" id="topbar"></div>
+
+    <div class="list-head">
+      <h1 style="font-size:22px;">New invoice</h1>
+      <a class="text-link" href="invoices.html">← Back to invoices</a>
+    </div>
+
+    <div id="error-box"></div>
+
+    <form id="invoice-form">
+      <div class="card">
+        <div class="eyebrow" style="margin-bottom:14px;">Bill to</div>
+        <div class="field">
+          <label for="client_select">Existing client <span class="muted">(optional)</span></label>
+          <select id="client_select">
+            <option value="">— Enter details manually —</option>
+          </select>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="client_name">Client name</label>
+            <input id="client_name" required />
+          </div>
+          <div class="field">
+            <label for="client_email">Client email</label>
+            <input id="client_email" type="email" required />
+          </div>
+        </div>
+        <div class="field">
+          <label for="client_address">Address <span class="muted">(optional)</span></label>
+          <input id="client_address" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="eyebrow" style="margin-bottom:14px;">Line items</div>
+        <div id="line-items"></div>
+        <button class="btn btn-ghost" type="button" id="add-line-item" style="margin-top:8px;">+ Add line</button>
+      </div>
+
+      <div class="card">
+        <div class="field-row">
+          <div class="field">
+            <label for="tax_rate">Tax rate <span class="muted">(e.g. 0.075 = 7.5%)</span></label>
+            <input id="tax_rate" type="number" step="0.0001" min="0" value="0" />
+          </div>
+          <div class="field">
+            <label for="currency">Currency</label>
+            <select id="currency">
+              <option value="USD">USD</option>
+              <option value="NGN">NGN</option>
+              <option value="GBP">GBP</option>
+              <option value="EUR">EUR</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="payment_terms">Payment terms <span class="muted">(days)</span></label>
+            <input id="payment_terms" type="number" min="0" value="30" />
+          </div>
+          <div class="field">
+            <label for="notes">Notes <span class="muted">(optional)</span></label>
+            <input id="notes" />
+          </div>
+        </div>
+
+        <div class="totals" style="margin-top:10px;">
+          <div class="row"><span>Subtotal</span><span id="preview-subtotal">0.00</span></div>
+          <div class="row"><span>Tax</span><span id="preview-tax">0.00</span></div>
+          <div class="row grand"><span>Total</span><span id="preview-total">0.00</span></div>
+        </div>
+      </div>
+
+      <button class="btn btn-stamp" type="submit" id="submit-btn">Create invoice</button>
+    </form>
+  </div>
+
+<template id="line-item-template">
+  <div class="field-row line-item-row" style="grid-template-columns: 3fr 1fr 1fr auto; align-items:end; margin-bottom:10px;">
+    <div class="field" style="margin-bottom:0;">
+      <label>Description</label>
+      <input class="li-description" required />
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label>Qty</label>
+      <input class="li-quantity" type="number" min="0" step="0.01" value="1" required />
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label>Unit price</label>
+      <input class="li-unit-price" type="number" min="0" step="0.01" value="0" required />
+    </div>
+    <button type="button" class="btn btn-ghost li-remove" style="padding:10px 14px;">✕</button>
+  </div>
+</template>
+
+<script src="api.js"></script>
+<script src="nav.js"></script>
+<script>
+Auth.requireLogin();
+renderTopbar("invoices");
+
+const lineItemsEl = document.getElementById("line-items");
+const template = document.getElementById("line-item-template");
+const errorBox = document.getElementById("error-box");
+const clientSelect = document.getElementById("client_select");
+let clientsById = {};
+
+function addLineItem() {
+  const row = template.content.cloneNode(true);
+  const el = row.querySelector(".line-item-row");
+  el.querySelector(".li-remove").addEventListener("click", () => {
+    el.remove();
+    updateTotals();
+  });
+  el.querySelectorAll("input").forEach(input => input.addEventListener("input", updateTotals));
+  lineItemsEl.appendChild(el);
+  updateTotals();
+}
+
+document.getElementById("add-line-item").addEventListener("click", addLineItem);
+
+function getLineItems() {
+  return Array.from(lineItemsEl.querySelectorAll(".line-item-row")).map(row => ({
+    description: row.querySelector(".li-description").value,
+    quantity: parseFloat(row.querySelector(".li-quantity").value) || 0,
+    unit_price: parseFloat(row.querySelector(".li-unit-price").value) || 0,
+  }));
+}
+
+function updateTotals() {
+  const items = getLineItems();
+  const taxRate = parseFloat(document.getElementById("tax_rate").value) || 0;
+  const subtotal = items.reduce((sum, i) => sum + i.quantity * i.unit_price, 0);
+  const tax = subtotal * taxRate;
+  const total = subtotal + tax;
+  document.getElementById("preview-subtotal").textContent = subtotal.toFixed(2);
+  document.getElementById("preview-tax").textContent = tax.toFixed(2);
+  document.getElementById("preview-total").textContent = total.toFixed(2);
+}
+
+document.getElementById("tax_rate").addEventListener("input", updateTotals);
+
+clientSelect.addEventListener("change", () => {
+  const client = clientsById[clientSelect.value];
+  if (client) {
+    document.getElementById("client_name").value = client.name;
+    document.getElementById("client_email").value = client.email;
+    document.getElementById("client_address").value = client.address || "";
+  }
+});
+
+async function loadClients() {
+  try {
+    const data = await apiFetch("/clients/");
+    data.data.forEach(c => {
+      clientsById[c.id] = c;
+      const opt = document.createElement("option");
+      opt.value = c.id;
+      opt.textContent = c.name;
+      clientSelect.appendChild(opt);
+    });
+  } catch (err) {
+    // non-fatal — manual entry still works
+  }
+}
+
+document.getElementById("invoice-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  errorBox.innerHTML = "";
+  const items = getLineItems();
+  if (!items.length) {
+    showError(errorBox, "Add at least one line item.");
+    return;
+  }
+
+  const payload = {
+    client_id: clientSelect.value || null,
+    client_name: document.getElementById("client_name").value.trim(),
+    client_email: document.getElementById("client_email").value.trim(),
+    client_address: document.getElementById("client_address").value.trim() || null,
+    items,
+    tax_rate: parseFloat(document.getElementById("tax_rate").value) || 0,
+    currency: document.getElementById("currency").value,
+    payment_terms: parseInt(document.getElementById("payment_terms").value) || 30,
+    notes: document.getElementById("notes").value.trim() || null,
+  };
+
+  const submitBtn = document.getElementById("submit-btn");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Creating…";
+
+  try {
+    const data = await apiFetch("/invoices/", { method: "POST", body: payload });
+    window.location.href = `invoice-detail.html?id=${data.data.id}`;
+  } catch (err) {
+    showError(errorBox, err.message);
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Create invoice";
+  }
+});
+
+loadClients();
+addLineItem();
+</script>
+</body>
+</html>

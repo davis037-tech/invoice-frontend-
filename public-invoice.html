@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Invoice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body class="no-rule">
+  <div class="shell" style="max-width: 680px;">
+    <div style="margin-bottom:24px;">
+      <div class="eyebrow">Ledger</div>
+    </div>
+
+    <div id="error-box"></div>
+    <div id="invoice-container">
+      <p class="muted">Loading…</p>
+    </div>
+  </div>
+
+<script src="api.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const token = params.get("token");
+const container = document.getElementById("invoice-container");
+const errorBox = document.getElementById("error-box");
+
+async function loadInvoice() {
+  try {
+    const data = await apiFetch(`/public/invoices/${token}`, { skipAuth: true });
+    render(data.data);
+  } catch (err) {
+    showError(errorBox, err.message);
+  }
+}
+
+function render(inv) {
+  const itemsRows = inv.items.map(item => `
+    <tr>
+      <td>${escapeHtml(item.description)}</td>
+      <td class="num">${item.quantity}</td>
+      <td class="num">${formatMoney(item.unit_price, inv.currency)}</td>
+      <td class="num">${formatMoney(item.quantity * item.unit_price, inv.currency)}</td>
+    </tr>
+  `).join("");
+
+  const canPay = inv.status === "SENT" && inv.payment_url;
+
+  container.innerHTML = `
+    <div class="invoice-doc">
+      ${inv.status !== "DRAFT" && inv.status !== "OVERDUE" ? `<div class="stamp ${inv.status}">${inv.status}</div>` : ""}
+      ${inv.status === "OVERDUE" ? `<div class="stamp OVERDUE">OVERDUE</div>` : ""}
+
+      <div class="invoice-head">
+        <div>
+          <div class="eyebrow">Invoice for</div>
+          <h1 style="font-size:26px;">${escapeHtml(inv.client_name)}</h1>
+          <div class="muted">${escapeHtml(inv.client_email)}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="num">${escapeHtml(inv.number)}</div>
+          <div class="muted" style="font-size:13px; margin-top:6px;">Issued ${formatDate(inv.issue_date)}</div>
+          <div class="muted" style="font-size:13px;">Due ${formatDate(inv.due_date)}</div>
+        </div>
+      </div>
+
+      <table class="line-items">
+        <thead>
+          <tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th></tr>
+        </thead>
+        <tbody>${itemsRows}</tbody>
+      </table>
+
+      <div class="totals">
+        <div class="row"><span>Subtotal</span><span>${formatMoney(inv.subtotal, inv.currency)}</span></div>
+        <div class="row"><span>Tax (${(inv.tax_rate * 100).toFixed(2)}%)</span><span>${formatMoney(inv.tax_amount, inv.currency)}</span></div>
+        <div class="row grand"><span>Total due</span><span>${formatMoney(inv.total, inv.currency)}</span></div>
+      </div>
+
+      ${inv.notes ? `<div style="margin-top:28px; padding-top:16px; border-top:1px solid var(--paper-line);"><div class="eyebrow" style="margin-bottom:6px;">Notes</div><p class="muted">${escapeHtml(inv.notes)}</p></div>` : ""}
+    </div>
+
+    ${canPay ? `
+      <div style="text-align:center; margin-top:24px;">
+        <a class="btn btn-stamp" href="${inv.payment_url}" style="padding:14px 32px; font-size:13px;">Pay ${formatMoney(inv.total, inv.currency)} now</a>
+      </div>
+    ` : ""}
+    ${inv.status === "PAID" ? `<p class="muted" style="text-align:center; margin-top:20px;">This invoice has been paid in full. Thank you.</p>` : ""}
+  `;
+}
+
+loadInvoice();
+</script>
+</body>
+</html>

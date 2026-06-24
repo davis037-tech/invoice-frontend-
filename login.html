@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ledger — Sign in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body class="no-rule">
+  <div class="center-page">
+    <div class="auth-card">
+      <div style="margin-bottom:28px;">
+        <div class="eyebrow">Ledger</div>
+        <h1>Welcome back</h1>
+        <p class="muted" style="margin-top:4px;">Sign in to your workspace.</p>
+      </div>
+
+      <div id="error-box"></div>
+
+      <form id="login-form" class="card">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" placeholder="you@acme.com" required />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" placeholder="••••••••" required />
+        </div>
+        <button class="btn btn-stamp" type="submit" id="submit-btn" style="width:100%; justify-content:center;">
+          Sign in
+        </button>
+      </form>
+
+      <p class="muted" style="text-align:center; margin-top:20px; font-size:13px;">
+        New here? <a class="text-link" href="register.html">Create an account</a>
+      </p>
+    </div>
+  </div>
+
+<script src="api.js"></script>
+<script>
+const form = document.getElementById("login-form");
+const errorBox = document.getElementById("error-box");
+const submitBtn = document.getElementById("submit-btn");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  errorBox.innerHTML = "";
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Signing in…";
+
+  const payload = { email: form.email.value.trim(), password: form.password.value };
+
+  try {
+    const data = await apiFetch("/auth/login", { method: "POST", body: payload, skipAuth: true });
+    Auth.setTokens(data.tokens.access, data.tokens.refresh);
+    Auth.setUser(data.user);
+    window.location.href = "clients.html";
+  } catch (err) {
+    showError(errorBox, err.message);
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Sign in";
+  }
+});
+</script>
+</body>
+</html>
