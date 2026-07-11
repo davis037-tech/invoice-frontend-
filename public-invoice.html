@@ -46,7 +46,7 @@ function render(inv) {
     </tr>
   `).join("");
 
-  const canPay = inv.status === "SENT" && inv.payment_url;
+  const showBankDetails = (inv.status === "SENT" || inv.status === "OVERDUE") && inv.bank_transfer_details;
 
   container.innerHTML = `
     <div class="invoice-doc">
@@ -82,9 +82,10 @@ function render(inv) {
       ${inv.notes ? `<div style="margin-top:28px; padding-top:16px; border-top:1px solid var(--paper-line);"><div class="eyebrow" style="margin-bottom:6px;">Notes</div><p class="muted">${escapeHtml(inv.notes)}</p></div>` : ""}
     </div>
 
-    ${canPay ? `
-      <div style="text-align:center; margin-top:24px;">
-        <a class="btn btn-stamp" href="${inv.payment_url}" style="padding:14px 32px; font-size:13px;">Pay ${formatMoney(inv.total, inv.currency)} now</a>
+    ${showBankDetails ? `
+      <div style="margin-top:24px; padding:20px; border:1px solid var(--paper-line); border-radius:6px;">
+        <div class="eyebrow" style="margin-bottom:10px;">Pay by bank transfer</div>
+        <p class="muted" style="white-space:pre-line; margin:0;">${escapeHtml(inv.bank_transfer_details)}</p>
       </div>
     ` : ""}
     ${inv.status === "PAID" ? `<p class="muted" style="text-align:center; margin-top:20px;">This invoice has been paid in full. Thank you.</p>` : ""}

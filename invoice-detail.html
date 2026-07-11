@@ -47,7 +47,7 @@ async function loadInvoice() {
 function render(inv) {
   actionsEl.innerHTML = `
     ${inv.status === "DRAFT" ? `<button class="btn" id="send-btn">Send invoice</button>` : ""}
-    ${inv.payment_url ? `<a class="btn btn-ghost" href="${inv.payment_url}" target="_blank">View payment link</a>` : ""}
+    ${inv.status === "SENT" || inv.status === "OVERDUE" ? `<button class="btn" id="mark-paid-btn">Mark as paid</button>` : ""}
     <a class="btn btn-ghost" href="public-invoice.html?token=${inv.public_token}" target="_blank">Public view</a>
   `;
 
@@ -113,6 +113,22 @@ function render(inv) {
         showError(errorBox, err.message);
         sendBtn.disabled = false;
         sendBtn.textContent = "Send invoice";
+      }
+    });
+  }
+
+  const markPaidBtn = document.getElementById("mark-paid-btn");
+  if (markPaidBtn) {
+    markPaidBtn.addEventListener("click", async () => {
+      markPaidBtn.disabled = true;
+      markPaidBtn.textContent = "Marking…";
+      try {
+        await apiFetch(`/billing/invoices/${invoiceId}/mark-paid`, { method: "POST" });
+        loadInvoice();
+      } catch (err) {
+        showError(errorBox, err.message);
+        markPaidBtn.disabled = false;
+        markPaidBtn.textContent = "Mark as paid";
       }
     });
   }

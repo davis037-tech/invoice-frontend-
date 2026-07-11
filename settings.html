@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Settings — Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar" id="topbar"></div>
+
+    <div class="list-head">
+      <h1 style="font-size:22px;">Settings</h1>
+    </div>
+
+    <div id="error-box"></div>
+    <div id="success-box"></div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <h3 style="margin-top:0;">Bank transfer details</h3>
+      <p class="muted" style="margin-top:-8px;">
+        Shown to clients on sent invoices so they know where to pay. Include
+        bank name, account name, account number, and any routing/IBAN/SWIFT
+        info your clients will need.
+      </p>
+      <form id="settings-form">
+        <div class="field">
+          <label for="payment_info">Payment details</label>
+          <textarea id="payment_info" name="payment_info" rows="6" placeholder="Bank: Example Bank&#10;Account name: Your Business&#10;Account number: 0123456789&#10;SWIFT: EXAMPLEXXX"></textarea>
+        </div>
+
+        <h3>Business info <span class="muted" style="font-weight:400;">(optional)</span></h3>
+        <div class="field-row">
+          <div class="field">
+            <label for="business_name">Business name</label>
+            <input id="business_name" name="business_name" type="text" />
+          </div>
+          <div class="field">
+            <label for="currency">Default currency</label>
+            <input id="currency" name="currency" type="text" maxlength="3" placeholder="USD" style="text-transform:uppercase;" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="business_address">Business address</label>
+          <input id="business_address" name="business_address" type="text" />
+        </div>
+
+        <button class="btn btn-stamp" type="submit" id="save-btn">Save settings</button>
+      </form>
+    </div>
+  </div>
+
+<script src="api.js"></script>
+<script src="nav.js"></script>
+<script>
+Auth.requireLogin();
+renderTopbar("settings");
+
+const form = document.getElementById("settings-form");
+const errorBox = document.getElementById("error-box");
+const successBox = document.getElementById("success-box");
+const saveBtn = document.getElementById("save-btn");
+
+async function loadSettings() {
+  try {
+    const data = await apiFetch("/settings/");
+    const s = data.data;
+    form.payment_info.value = s.payment_info || "";
+    form.business_name.value = s.business_name || "";
+    form.currency.value = s.currency || "";
+    form.business_address.value = s.business_address || "";
+  } catch (err) {
+    showError(errorBox, err.message);
+  }
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  errorBox.innerHTML = "";
+  successBox.innerHTML = "";
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Saving…";
+
+  const payload = {
+    payment_info: form.payment_info.value.trim() || null,
+    business_name: form.business_name.value.trim() || null,
+    currency: form.currency.value.trim().toUpperCase() || null,
+    business_address: form.business_address.value.trim() || null,
+  };
+
+  try {
+    await apiFetch("/settings/", { method: "PUT", body: payload });
+    successBox.innerHTML = `<p class="muted">Settings saved.</p>`;
+  } catch (err) {
+    showError(errorBox, err.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save settings";
+  }
+});
+
+loadSettings();
+</script>
+</body>
+</html>
