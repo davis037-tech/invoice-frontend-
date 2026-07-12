@@ -18,6 +18,7 @@
     </div>
 
     <div id="error-box"></div>
+    <p class="muted" id="quota-note" style="font-size:13px;"></p>
 
     <form id="invoice-form">
       <div class="card">
@@ -115,6 +116,18 @@ renderTopbar("invoices");
 const lineItemsEl = document.getElementById("line-items");
 const template = document.getElementById("line-item-template");
 const errorBox = document.getElementById("error-box");
+
+async function loadQuota() {
+  try {
+    const { data } = await apiFetch("/invoices/quota");
+    const note = document.getElementById("quota-note");
+    note.textContent = `${data.remaining} of ${data.limit} invoices remaining this week`;
+    if (data.remaining === 0) note.style.color = "var(--stamp-red, #a33)";
+  } catch (err) {
+    // Non-critical — don't block the form if this fails.
+  }
+}
+loadQuota();
 const clientSelect = document.getElementById("client_select");
 let clientsById = {};
 

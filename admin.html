@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin — Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .stat-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:20px; }
+  .stat-box { border:1px solid var(--paper-line); border-radius:6px; padding:14px; }
+  .stat-box .num { font-family:'Source Serif 4', serif; font-size:26px; font-weight:700; }
+  .stat-box .label { font-size:12px; color:#8a8378; text-transform:uppercase; letter-spacing:.04em; }
+  .tenant-row { border:1px solid var(--paper-line); border-radius:6px; padding:14px; margin-bottom:12px; }
+  .tenant-row select, .tenant-row input[type=number] { width:auto; display:inline-block; }
+  .quota-bar { height:6px; background:#eee; border-radius:3px; overflow:hidden; margin-top:6px; }
+  .quota-bar-fill { height:100%; background:var(--stamp-red, #a33); }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar" id="topbar"></div>
+
+    <div class="list-head">
+      <h1 style="font-size:22px;">Admin</h1>
+    </div>
+
+    <div id="error-box"></div>
+    <div id="stats" class="stat-grid"></div>
+    <div id="tenants-list"><p class="muted">Loading…</p></div>
+  </div>
+
+<script src="api.js"></script>
+<script src="nav.js"></script>
+<script>
+Auth.requireLogin();
+renderTopbar("admin");
+
+const errorBox = document.getElementById("error-box");
+const statsEl = document.getElementById("stats");
+const listEl = document.getElementById("tenants-list");
+let PLAN_OPTIONS = ["FREE", "PRO", "TEAM"];
+
+async function loadStats() {
+  try {
+    const { data } = await apiFetch("/admin/stats");
+    statsEl.innerHTML = `
+      <div class="stat-box"><div class="num">${data.total_tenants}</div><div class="label">Users / accounts</div></div>
+      <div class="stat-box"><div class="num">${data.signups_this_week}</div><div class="label">Signups this week</div></div>
+      <div class="stat-box"><div class="num">${data.invoices_this_week}</div><div class="label">Invoices this week</div></div>
+      <div class="stat-box"><div class="num">${data.total_invoices}</div><div class="label">Invoices all-time</div></div>
+    `;
+  } catch (err) {
+    showError(errorBox, err.message);
+  }
+}
+
+async function loadTenants() {
+  try {
+    const res = await apiFetch("/admin/tenants");
+    PLAN_OPTIONS = res.meta.plans;
+    render(res.data);
+  } catch (err) {
+    showError(errorBox, err.message);
+  }
+}
+
+function render(tenants) {
+  if (!tenants.length) {
+    listEl.innerHTML = `<p class="muted">No accounts yet.</p>`;
+    return;
+  }
+
+  listEl.innerHTML = tenants.map(t => {
+    const pct = t.weekly_limit > 0 ? Math.min(100, Math.round((t.weekly_used / t.weekly_limit) * 100)) : 0;
+    return `
+    <div class="tenant-row" data-id="${t.id}">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+        <div>
+          <div class="primary">${escapeHtml(t.name)}</div>
+          <div class="secondary">${escapeHtml(t.owner_email || "—")} · joined ${formatDate(t.created_at)}</div>
+        </div>
+        <div style="text-align:right; font-size:13px;">
+          <div>${t.weekly_used} / ${t.weekly_limit} this week</div>
+          <div class="muted" style="font-size:12px;">${t.total_invoices} total</div>
+        </div>
+      </div>
+      <div class="quota-bar"><div class="quota-bar-fill" style="width:${pct}%;"></div></div>
+
+      <div style="display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap;">
+        <label class="muted" style="font-size:12px;">Plan
+          <select data-plan>
+            ${PLAN_OPTIONS.map(p => `<option value="${p}" ${p === t.plan ? "selected" : ""}>${p}</option>`).join("")}
+          </select>
+        </label>
+        <label class="muted" style="font-size:12px;">Override weekly limit
+          <input type="number" min="0" data-override placeholder="none" value="${t.invoice_limit_override ?? ""}" style="width:80px;" />
+        </label>
+        <button class="btn btn-ghost" data-save>Save</button>
+        <span class="muted save-status" style="font-size:12px;"></span>
+      </div>
+    </div>
+  `;
+  }).join("");
+
+  listEl.querySelectorAll(".tenant-row").forEach(row => {
+    const id = row.dataset.id;
+    row.querySelector("[data-save]").addEventListener("click", () => saveTenant(id, row));
+  });
+}
+
+async function saveTenant(id, row) {
+  const plan = row.querySelector("[data-plan]").value;
+  const overrideRaw = row.querySelector("[data-override]").value.trim();
+  const override = overrideRaw === "" ? null : parseInt(overrideRaw, 10);
+  const statusEl = row.querySelector(".save-status");
+  const btn = row.querySelector("[data-save]");
+
+  btn.disabled = true;
+  statusEl.textContent = "Saving…";
+  try {
+    await apiFetch(`/admin/tenants/${id}`, {
+      method: "PUT",
+      body: { plan, invoice_limit_override: override },
+    });
+    statusEl.textContent = "Saved";
+    setTimeout(() => { statusEl.textContent = ""; }, 1500);
+  } catch (err) {
+    statusEl.textContent = "";
+    showError(errorBox, err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+loadStats();
+loadTenants();
+</script>
+</body>
+</html>

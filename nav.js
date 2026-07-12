@@ -13,6 +13,7 @@ function renderTopbar(activePage) {
       <a href="invoices.html" class="${activePage === 'invoices' ? 'active' : ''}">Invoices</a>
       <a href="payments.html" class="${activePage === 'payments' ? 'active' : ''}">Payments</a>
       <a href="settings.html" class="${activePage === 'settings' ? 'active' : ''}">Settings</a>
+      ${user && user.is_superadmin ? `<a href="admin.html" class="${activePage === 'admin' ? 'active' : ''}">Admin</a>` : ""}
       <a href="#" id="logout-link">${user ? `${user.email} · Sign out` : 'Sign out'}</a>
     </nav>
   `;
