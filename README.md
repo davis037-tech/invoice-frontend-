@@ -33,7 +33,7 @@ Plain HTML/CSS/JS, no build step, no npm install.
 | `invoices.html` | List invoices, filter by status |
 | `invoice-new.html` | Create an invoice with dynamic line items |
 | `invoice-detail.html` | View one invoice, send it, mark it paid once you confirm the bank transfer |
-| `public-invoice.html` | The link your client sees — no login needed, shows your bank transfer details |
+| `i.html` | The link your client sees — no login needed, shows your bank transfer details |
 | `settings.html` | Business info + bank transfer details shown on sent invoices |
 
 ## Notes

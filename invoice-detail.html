@@ -45,12 +45,12 @@ async function loadInvoice() {
 }
 
 function render(inv) {
-  const publicUrl = `${window.location.origin}/public-invoice.html?token=${inv.public_token}`;
+  const publicUrl = `${window.location.origin}/i.html?token=${inv.public_token}`;
 
   actionsEl.innerHTML = `
     ${inv.status === "DRAFT" ? `<button class="btn" id="send-btn">Generate invoice link</button>` : ""}
     ${inv.status === "SENT" || inv.status === "OVERDUE" ? `<button class="btn" id="mark-paid-btn">Mark as paid</button>` : ""}
-    ${inv.status !== "DRAFT" ? `<a class="btn btn-ghost" href="public-invoice.html?token=${inv.public_token}" target="_blank">Open link</a>` : ""}
+    ${inv.status !== "DRAFT" ? `<a class="btn btn-ghost" href="i.html?token=${inv.public_token}" target="_blank">Open link</a>` : ""}
   `;
 
   if (inv.status !== "DRAFT") {
