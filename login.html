@@ -26,7 +26,10 @@
         </div>
         <div class="field">
           <label for="password">Password</label>
-          <input id="password" name="password" type="password" placeholder="••••••••" required />
+          <div style="position:relative;">
+            <input id="password" name="password" type="password" placeholder="••••••••" required style="padding-right:56px;" />
+            <button type="button" class="pw-toggle" data-target="password">Show</button>
+          </div>
         </div>
         <button class="btn btn-stamp" type="submit" id="submit-btn" style="width:100%; justify-content:center;">
           Sign in
@@ -40,7 +43,24 @@
   </div>
 
 <script src="api.js"></script>
+<style>
+  .pw-toggle {
+    position:absolute; right:6px; top:50%; transform:translateY(-50%);
+    background:none; border:none; color:#8a8378; font-size:12px;
+    text-transform:uppercase; letter-spacing:.03em; cursor:pointer; padding:6px 8px;
+  }
+  .pw-toggle:hover { color:#3a352c; }
+</style>
 <script>
+document.querySelectorAll(".pw-toggle").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const input = document.getElementById(btn.dataset.target);
+    const showing = input.type === "text";
+    input.type = showing ? "password" : "text";
+    btn.textContent = showing ? "Show" : "Hide";
+  });
+});
+
 const form = document.getElementById("login-form");
 const errorBox = document.getElementById("error-box");
 const submitBtn = document.getElementById("submit-btn");

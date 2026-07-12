@@ -22,14 +22,36 @@
     <div class="card" style="margin-bottom:20px;">
       <h3 style="margin-top:0;">Bank transfer details</h3>
       <p class="muted" style="margin-top:-8px;">
-        Shown to clients on sent invoices so they know where to pay. Include
-        bank name, account name, account number, and any routing/IBAN/SWIFT
-        info your clients will need.
+        Shown to clients on sent invoices so they know where to pay.
       </p>
       <form id="settings-form">
+        <div class="field-row">
+          <div class="field">
+            <label for="bank_name">Bank name</label>
+            <input id="bank_name" name="bank_name" type="text" placeholder="e.g. First Bank" />
+          </div>
+          <div class="field">
+            <label for="account_name">Account name</label>
+            <input id="account_name" name="account_name" type="text" placeholder="e.g. Your Business Ltd" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="account_number">Account number</label>
+            <input id="account_number" name="account_number" type="text" placeholder="e.g. 0123456789" />
+          </div>
+          <div class="field">
+            <label for="routing_number">Routing number / IBAN <span class="muted">(optional)</span></label>
+            <input id="routing_number" name="routing_number" type="text" placeholder="If your bank needs one" />
+          </div>
+        </div>
         <div class="field">
-          <label for="payment_info">Payment details</label>
-          <textarea id="payment_info" name="payment_info" rows="6" placeholder="Bank: Example Bank&#10;Account name: Your Business&#10;Account number: 0123456789&#10;SWIFT: EXAMPLEXXX"></textarea>
+          <label for="swift_code">SWIFT / BIC code <span class="muted">(optional, for international transfers)</span></label>
+          <input id="swift_code" name="swift_code" type="text" placeholder="e.g. EXAMPLEXXX" />
+        </div>
+        <div class="field">
+          <label for="payment_notes">Additional notes <span class="muted">(optional)</span></label>
+          <textarea id="payment_notes" name="payment_notes" rows="2" placeholder="e.g. branch code, mobile money number, anything else clients need"></textarea>
         </div>
 
         <h3>Business info <span class="muted" style="font-weight:400;">(optional)</span></h3>
@@ -68,7 +90,12 @@ async function loadSettings() {
   try {
     const data = await apiFetch("/settings/");
     const s = data.data;
-    form.payment_info.value = s.payment_info || "";
+    form.bank_name.value = s.bank_name || "";
+    form.account_name.value = s.account_name || "";
+    form.account_number.value = s.account_number || "";
+    form.routing_number.value = s.routing_number || "";
+    form.swift_code.value = s.swift_code || "";
+    form.payment_notes.value = s.payment_notes || "";
     form.business_name.value = s.business_name || "";
     form.currency.value = s.currency || "";
     form.business_address.value = s.business_address || "";
@@ -85,7 +112,12 @@ form.addEventListener("submit", async (e) => {
   saveBtn.textContent = "Saving…";
 
   const payload = {
-    payment_info: form.payment_info.value.trim() || null,
+    bank_name: form.bank_name.value.trim() || null,
+    account_name: form.account_name.value.trim() || null,
+    account_number: form.account_number.value.trim() || null,
+    routing_number: form.routing_number.value.trim() || null,
+    swift_code: form.swift_code.value.trim() || null,
+    payment_notes: form.payment_notes.value.trim() || null,
     business_name: form.business_name.value.trim() || null,
     currency: form.currency.value.trim().toUpperCase() || null,
     business_address: form.business_address.value.trim() || null,

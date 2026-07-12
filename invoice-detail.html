@@ -45,11 +45,35 @@ async function loadInvoice() {
 }
 
 function render(inv) {
+  const publicUrl = `${window.location.origin}/public-invoice.html?token=${inv.public_token}`;
+
   actionsEl.innerHTML = `
-    ${inv.status === "DRAFT" ? `<button class="btn" id="send-btn">Send invoice</button>` : ""}
+    ${inv.status === "DRAFT" ? `<button class="btn" id="send-btn">Generate invoice link</button>` : ""}
     ${inv.status === "SENT" || inv.status === "OVERDUE" ? `<button class="btn" id="mark-paid-btn">Mark as paid</button>` : ""}
-    <a class="btn btn-ghost" href="public-invoice.html?token=${inv.public_token}" target="_blank">Public view</a>
+    ${inv.status !== "DRAFT" ? `<a class="btn btn-ghost" href="public-invoice.html?token=${inv.public_token}" target="_blank">Open link</a>` : ""}
   `;
+
+  if (inv.status !== "DRAFT") {
+    actionsEl.innerHTML += `
+      <div style="display:flex; gap:8px; align-items:center; margin-top:12px; width:100%;">
+        <input type="text" readonly value="${publicUrl}" id="public-link-input" style="flex:1;" />
+        <button class="btn btn-ghost" id="copy-link-btn" style="flex-shrink:0;">Copy link</button>
+      </div>
+    `;
+    const copyBtn = document.getElementById("copy-link-btn");
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(publicUrl);
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => { copyBtn.textContent = "Copy link"; }, 1500);
+      } catch {
+        document.getElementById("public-link-input").select();
+        document.execCommand("copy");
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => { copyBtn.textContent = "Copy link"; }, 1500);
+      }
+    });
+  }
 
   const itemsRows = inv.items.map(item => `
     <tr>
@@ -120,14 +144,14 @@ function render(inv) {
   if (sendBtn) {
     sendBtn.addEventListener("click", async () => {
       sendBtn.disabled = true;
-      sendBtn.textContent = "Sending…";
+      sendBtn.textContent = "Generating…";
       try {
         await apiFetch(`/invoices/${invoiceId}/send`, { method: "POST" });
         loadInvoice();
       } catch (err) {
         showError(errorBox, err.message);
         sendBtn.disabled = false;
-        sendBtn.textContent = "Send invoice";
+        sendBtn.textContent = "Generate invoice link";
       }
     });
   }
