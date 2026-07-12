@@ -7,14 +7,91 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css" />
+<style>
+  /* ===== Black & gold reskin — scoped to this page only ===== */
+  :root {
+    --ink: #EDE6D6;        /* parchment text on black */
+    --paper: #0E0D0B;      /* near-black background */
+    --paper-line: rgba(201, 162, 39, 0.28);  /* gold hairline instead of cream rule */
+    --stamp: #C9A227;      /* gold accent — replaces the red stamp everywhere it's used */
+    --slate: #A69A78;      /* warm muted gold-grey, secondary text */
+    --slate-soft: #6E6650;
+    --ok-green: #9CB37A;
+    --panel: #17140F;      /* card / input surface, one step up from the page background */
+  }
+
+  body { background: var(--paper); }
+
+  .card, .invoice-doc, input, select, textarea {
+    background: var(--panel);
+    color: var(--ink);
+  }
+  input, select, textarea { border-color: var(--paper-line); }
+  input::placeholder, textarea::placeholder { color: #5C5643; }
+
+  .btn-stamp { color: #14120F; font-weight: 600; }
+  .btn-stamp:hover { background: #E3C34C; border-color: #E3C34C; }
+  .btn-ghost:hover { border-color: var(--stamp); }
+
+  .stamp {
+    mix-blend-mode: normal;
+    box-shadow: 0 0 26px rgba(201, 162, 39, 0.16);
+    background: radial-gradient(circle at 35% 30%, rgba(201, 162, 39, 0.08), transparent 65%);
+  }
+
+  .brandmark {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 32px;
+  }
+  .brandmark .mark {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 1px solid var(--stamp);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-serif); font-size: 13px; color: var(--stamp);
+  }
+  .brandmark .name {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--slate);
+  }
+
+  .step-indicator {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--slate-soft);
+    margin-bottom: 28px;
+  }
+  .step-indicator .step.active { color: var(--stamp); }
+  .step-indicator .divider { width: 22px; height: 1px; background: var(--paper-line); }
+
+  #step-invoice, #step-payment {
+    transition: opacity 0.25s ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #step-invoice, #step-payment { transition: none; }
+  }
+
+  .grand-total {
+    font-family: var(--font-serif);
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--stamp);
+  }
+</style>
 </head>
 <body class="no-rule">
   <div class="shell" style="max-width: 680px;">
-    <div style="margin-bottom:24px;">
-      <div class="eyebrow">Ledger</div>
+    <div class="brandmark">
+      <div class="mark">L</div>
+      <div class="name">Ledger</div>
     </div>
 
     <div id="error-box"></div>
+    <div id="step-indicator" class="step-indicator" style="display:none;">
+      <span class="step" id="step-label-invoice">Invoice</span>
+      <span class="divider"></span>
+      <span class="step" id="step-label-payment">Payment</span>
+    </div>
+
     <div id="invoice-container">
       <p class="muted">Loading…</p>
     </div>
@@ -26,6 +103,7 @@ const params = new URLSearchParams(window.location.search);
 const token = params.get("token");
 const container = document.getElementById("invoice-container");
 const errorBox = document.getElementById("error-box");
+const stepIndicator = document.getElementById("step-indicator");
 
 async function loadInvoice() {
   try {
@@ -49,45 +127,59 @@ function render(inv) {
   const showBankDetails = (inv.status === "SENT" || inv.status === "OVERDUE") && inv.bank_transfer_details;
 
   container.innerHTML = `
-    <div class="invoice-doc">
-      ${inv.status !== "DRAFT" && inv.status !== "OVERDUE" ? `<div class="stamp ${inv.status}">${inv.status}</div>` : ""}
-      ${inv.status === "OVERDUE" ? `<div class="stamp OVERDUE">OVERDUE</div>` : ""}
+    <div id="step-invoice">
+      <div class="invoice-doc">
+        ${inv.status !== "DRAFT" && inv.status !== "OVERDUE" ? `<div class="stamp ${inv.status}">${inv.status}</div>` : ""}
+        ${inv.status === "OVERDUE" ? `<div class="stamp OVERDUE">OVERDUE</div>` : ""}
 
-      <div class="invoice-head">
-        <div>
-          <div class="eyebrow">Invoice for</div>
-          <h1 style="font-size:26px;">${escapeHtml(inv.client_name)}</h1>
-          <div class="muted">${escapeHtml(inv.client_email)}</div>
+        <div class="invoice-head">
+          <div>
+            <div class="eyebrow">Invoice for</div>
+            <h1 style="font-size:26px;">${escapeHtml(inv.client_name)}</h1>
+            <div class="muted">${escapeHtml(inv.client_email)}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="num">${escapeHtml(inv.number)}</div>
+            <div class="muted" style="font-size:13px; margin-top:6px;">Issued ${formatDate(inv.issue_date)}</div>
+            <div class="muted" style="font-size:13px;">Due ${formatDate(inv.due_date)}</div>
+          </div>
         </div>
-        <div style="text-align:right;">
-          <div class="num">${escapeHtml(inv.number)}</div>
-          <div class="muted" style="font-size:13px; margin-top:6px;">Issued ${formatDate(inv.issue_date)}</div>
-          <div class="muted" style="font-size:13px;">Due ${formatDate(inv.due_date)}</div>
+
+        <table class="line-items">
+          <thead>
+            <tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th></tr>
+          </thead>
+          <tbody>${itemsRows}</tbody>
+        </table>
+
+        <div class="totals">
+          <div class="row"><span>Subtotal</span><span>${formatMoney(inv.subtotal, inv.currency)}</span></div>
+          <div class="row"><span>Tax (${(inv.tax_rate * 100).toFixed(2)}%)</span><span>${formatMoney(inv.tax_amount, inv.currency)}</span></div>
+          <div class="row grand"><span>Total due</span><span class="grand-total" style="font-size:18px;">${formatMoney(inv.total, inv.currency)}</span></div>
         </div>
+
+        ${inv.notes ? `<div style="margin-top:28px; padding-top:16px; border-top:1px solid var(--paper-line);"><div class="eyebrow" style="margin-bottom:6px;">Notes</div><p class="muted">${escapeHtml(inv.notes)}</p></div>` : ""}
       </div>
 
-      <table class="line-items">
-        <thead>
-          <tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th></tr>
-        </thead>
-        <tbody>${itemsRows}</tbody>
-      </table>
-
-      <div class="totals">
-        <div class="row"><span>Subtotal</span><span>${formatMoney(inv.subtotal, inv.currency)}</span></div>
-        <div class="row"><span>Tax (${(inv.tax_rate * 100).toFixed(2)}%)</span><span>${formatMoney(inv.tax_amount, inv.currency)}</span></div>
-        <div class="row grand"><span>Total due</span><span>${formatMoney(inv.total, inv.currency)}</span></div>
-      </div>
-
-      ${inv.notes ? `<div style="margin-top:28px; padding-top:16px; border-top:1px solid var(--paper-line);"><div class="eyebrow" style="margin-bottom:6px;">Notes</div><p class="muted">${escapeHtml(inv.notes)}</p></div>` : ""}
+      ${showBankDetails ? `
+        <div style="text-align:center; margin-top:24px;">
+          <button class="btn btn-stamp" id="continue-btn" style="padding:14px 32px; font-size:13px;">Continue to payment →</button>
+          ${inv.payment_proof_submitted_at ? `<p class="muted" style="font-size:13px; margin-top:12px;">Payment confirmation submitted ${formatDate(inv.payment_proof_submitted_at)} — awaiting review.</p>` : ""}
+        </div>
+      ` : ""}
+      ${inv.status === "PAID" ? `<p class="muted" style="text-align:center; margin-top:20px;">This invoice has been paid in full. Thank you.</p>` : ""}
     </div>
 
     ${showBankDetails ? `
-      <div style="margin-top:24px; padding:20px; border:1px solid var(--paper-line); border-radius:6px;">
+    <div id="step-payment" style="display:none;">
+      <a href="#" id="back-btn" class="text-link" style="display:inline-block; margin-bottom:20px;">← Back to invoice</a>
+
+      <div class="card" style="margin-bottom:16px;">
         <div class="eyebrow" style="margin-bottom:10px;">Pay by bank transfer</div>
-        <p class="muted" style="white-space:pre-line; margin:0;">${escapeHtml(inv.bank_transfer_details)}</p>
+        <p style="white-space:pre-line; margin:0;">${escapeHtml(inv.bank_transfer_details)}</p>
       </div>
-      <div style="margin-top:16px; padding:20px; border:1px solid var(--paper-line); border-radius:6px;">
+
+      <div class="card">
         <div class="eyebrow" style="margin-bottom:10px;">Already paid?</div>
         ${inv.payment_proof_submitted_at ? `
           <p class="muted" style="margin:0 0 12px;">
@@ -113,9 +205,38 @@ function render(inv) {
           <button class="btn btn-stamp" type="submit" id="proof-submit-btn">Submit payment confirmation</button>
         </form>
       </div>
+    </div>
     ` : ""}
-    ${inv.status === "PAID" ? `<p class="muted" style="text-align:center; margin-top:20px;">This invoice has been paid in full. Thank you.</p>` : ""}
   `;
+
+  if (showBankDetails) {
+    stepIndicator.style.display = "flex";
+    const stepInvoice = document.getElementById("step-invoice");
+    const stepPayment = document.getElementById("step-payment");
+    const labelInvoice = document.getElementById("step-label-invoice");
+    const labelPayment = document.getElementById("step-label-payment");
+
+    const goToPayment = () => {
+      stepInvoice.style.display = "none";
+      stepPayment.style.display = "block";
+      labelInvoice.classList.remove("active");
+      labelPayment.classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    const goToInvoice = () => {
+      stepPayment.style.display = "none";
+      stepInvoice.style.display = "block";
+      labelPayment.classList.remove("active");
+      labelInvoice.classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    labelInvoice.classList.add("active");
+    document.getElementById("continue-btn").addEventListener("click", goToPayment);
+    document.getElementById("back-btn").addEventListener("click", (e) => { e.preventDefault(); goToInvoice(); });
+  } else {
+    stepIndicator.style.display = "none";
+  }
 
   const proofForm = document.getElementById("proof-form");
   if (proofForm) {
