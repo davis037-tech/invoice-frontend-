@@ -99,6 +99,21 @@ function render(inv) {
 
       ${inv.notes ? `<div style="margin-top:28px; padding-top:16px; border-top:1px solid var(--paper-line);"><div class="eyebrow" style="margin-bottom:6px;">Notes</div><p class="muted">${escapeHtml(inv.notes)}</p></div>` : ""}
     </div>
+
+    ${inv.payment_proof_submitted_at ? `
+      <div class="card" style="margin-top:20px;">
+        <div class="eyebrow" style="margin-bottom:10px;">Payment confirmation submitted</div>
+        <p class="muted" style="font-size:13px; margin-top:-4px;">Submitted ${formatDate(inv.payment_proof_submitted_at)}</p>
+        ${inv.payment_proof_note ? `<p style="white-space:pre-line;">${escapeHtml(inv.payment_proof_note)}</p>` : ""}
+        ${inv.payment_proof_image ? `<img src="${inv.payment_proof_image}" alt="Receipt" style="max-width:100%; border:1px solid var(--paper-line); border-radius:4px; margin-top:8px;" />` : ""}
+        ${inv.status !== "PAID" ? `
+          <div style="display:flex; gap:8px; margin-top:16px;">
+            <button class="btn btn-stamp" id="confirm-proof-btn">Confirm &amp; mark paid</button>
+            <button class="btn btn-ghost" id="reject-proof-btn">Reject, ask to resubmit</button>
+          </div>
+        ` : ""}
+      </div>
+    ` : ""}
   `;
 
   const sendBtn = document.getElementById("send-btn");
@@ -129,6 +144,35 @@ function render(inv) {
         showError(errorBox, err.message);
         markPaidBtn.disabled = false;
         markPaidBtn.textContent = "Mark as paid";
+      }
+    });
+  }
+
+  const confirmProofBtn = document.getElementById("confirm-proof-btn");
+  if (confirmProofBtn) {
+    confirmProofBtn.addEventListener("click", async () => {
+      confirmProofBtn.disabled = true;
+      try {
+        await apiFetch(`/billing/invoices/${invoiceId}/mark-paid`, { method: "POST" });
+        loadInvoice();
+      } catch (err) {
+        showError(errorBox, err.message);
+        confirmProofBtn.disabled = false;
+      }
+    });
+  }
+
+  const rejectProofBtn = document.getElementById("reject-proof-btn");
+  if (rejectProofBtn) {
+    rejectProofBtn.addEventListener("click", async () => {
+      if (!confirm("Reject this payment confirmation? The client will need to submit it again.")) return;
+      rejectProofBtn.disabled = true;
+      try {
+        await apiFetch(`/billing/invoices/${invoiceId}/reject-proof`, { method: "POST" });
+        loadInvoice();
+      } catch (err) {
+        showError(errorBox, err.message);
+        rejectProofBtn.disabled = false;
       }
     });
   }

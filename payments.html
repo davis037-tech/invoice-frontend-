@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Payments — Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar" id="topbar"></div>
+
+    <div class="list-head">
+      <h1 style="font-size:22px;">Payments awaiting confirmation</h1>
+    </div>
+
+    <div id="error-box"></div>
+    <div id="payments-list">
+      <p class="muted">Loading…</p>
+    </div>
+  </div>
+
+<script src="api.js"></script>
+<script src="nav.js"></script>
+<script>
+Auth.requireLogin();
+renderTopbar("payments");
+
+const listEl = document.getElementById("payments-list");
+const errorBox = document.getElementById("error-box");
+
+async function loadPayments() {
+  try {
+    const data = await apiFetch("/billing/invoices/awaiting-confirmation");
+    render(data.data);
+  } catch (err) {
+    showError(errorBox, err.message);
+  }
+}
+
+function render(invoices) {
+  if (!invoices.length) {
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <h3>Nothing to review</h3>
+        <p>Payment confirmations submitted by clients will show up here.</p>
+      </div>`;
+    return;
+  }
+
+  listEl.innerHTML = invoices.map(inv => `
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+        <div>
+          <div class="primary">
+            <a href="invoice-detail.html?id=${inv.id}">${escapeHtml(inv.number)} — ${escapeHtml(inv.client_name)}</a>
+          </div>
+          <div class="secondary">${formatMoney(inv.total, inv.currency)} · submitted ${formatDate(inv.payment_proof_submitted_at)}</div>
+        </div>
+        <div style="display:flex; gap:8px; flex-shrink:0;">
+          <button class="btn btn-stamp" data-confirm="${inv.id}">Confirm</button>
+          <button class="btn btn-ghost" data-reject="${inv.id}">Reject</button>
+        </div>
+      </div>
+      ${inv.payment_proof_note ? `<p class="muted" style="white-space:pre-line; margin-top:12px;">${escapeHtml(inv.payment_proof_note)}</p>` : ""}
+      ${inv.payment_proof_image ? `<img src="${inv.payment_proof_image}" alt="Receipt" style="max-width:200px; border:1px solid var(--paper-line); border-radius:4px; margin-top:8px;" />` : ""}
+    </div>
+  `).join("");
+
+  listEl.querySelectorAll("[data-confirm]").forEach(btn => {
+    btn.addEventListener("click", () => confirmPayment(btn.dataset.confirm, btn));
+  });
+  listEl.querySelectorAll("[data-reject]").forEach(btn => {
+    btn.addEventListener("click", () => rejectPayment(btn.dataset.reject, btn));
+  });
+}
+
+async function confirmPayment(id, btn) {
+  btn.disabled = true;
+  try {
+    await apiFetch(`/billing/invoices/${id}/mark-paid`, { method: "POST" });
+    loadPayments();
+  } catch (err) {
+    showError(errorBox, err.message);
+    btn.disabled = false;
+  }
+}
+
+async function rejectPayment(id, btn) {
+  if (!confirm("Reject this payment confirmation? The client will need to submit it again.")) return;
+  btn.disabled = true;
+  try {
+    await apiFetch(`/billing/invoices/${id}/reject-proof`, { method: "POST" });
+    loadPayments();
+  } catch (err) {
+    showError(errorBox, err.message);
+    btn.disabled = false;
+  }
+}
+
+loadPayments();
+</script>
+</body>
+</html>

@@ -87,9 +87,83 @@ function render(inv) {
         <div class="eyebrow" style="margin-bottom:10px;">Pay by bank transfer</div>
         <p class="muted" style="white-space:pre-line; margin:0;">${escapeHtml(inv.bank_transfer_details)}</p>
       </div>
+      <div style="margin-top:16px; padding:20px; border:1px solid var(--paper-line); border-radius:6px;">
+        <div class="eyebrow" style="margin-bottom:10px;">Already paid?</div>
+        ${inv.payment_proof_submitted_at ? `
+          <p class="muted" style="margin:0 0 12px;">
+            You submitted payment confirmation on ${formatDate(inv.payment_proof_submitted_at)}.
+            We'll confirm receipt shortly. Sent the wrong details? You can submit again below.
+          </p>
+        ` : `
+          <p class="muted" style="margin:0 0 12px;">
+            Once you've made the transfer, let us know so we can confirm it —
+            add your transaction reference and/or a photo of the receipt.
+          </p>
+        `}
+        <div id="proof-error"></div>
+        <form id="proof-form">
+          <div class="field">
+            <label for="proof-note">Transaction reference / note</label>
+            <textarea id="proof-note" name="note" rows="3" placeholder="e.g. Bank ref #123456, transferred 11 Jul"></textarea>
+          </div>
+          <div class="field">
+            <label for="proof-image">Receipt photo <span class="muted">(optional)</span></label>
+            <input id="proof-image" name="image" type="file" accept="image/*" />
+          </div>
+          <button class="btn btn-stamp" type="submit" id="proof-submit-btn">Submit payment confirmation</button>
+        </form>
+      </div>
     ` : ""}
     ${inv.status === "PAID" ? `<p class="muted" style="text-align:center; margin-top:20px;">This invoice has been paid in full. Thank you.</p>` : ""}
   `;
+
+  const proofForm = document.getElementById("proof-form");
+  if (proofForm) {
+    proofForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const proofErrorBox = document.getElementById("proof-error");
+      const submitBtn = document.getElementById("proof-submit-btn");
+      proofErrorBox.innerHTML = "";
+
+      const note = proofForm.note.value.trim();
+      const file = proofForm.image.files[0];
+
+      if (!note && !file) {
+        showError(proofErrorBox, "Add a reference note or a receipt photo.");
+        return;
+      }
+      if (file && file.size > 3 * 1024 * 1024) {
+        showError(proofErrorBox, "That photo is too large — please use one under 3MB.");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting…";
+
+      try {
+        const image_base64 = file ? await fileToDataUrl(file) : null;
+        await apiFetch(`/public/invoices/${token}/payment-proof`, {
+          method: "POST",
+          skipAuth: true,
+          body: { note: note || null, image_base64 },
+        });
+        loadInvoice();
+      } catch (err) {
+        showError(proofErrorBox, err.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit payment confirmation";
+      }
+    });
+  }
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 loadInvoice();
