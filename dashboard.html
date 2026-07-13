@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard — Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .stat-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:24px; }
+  .stat-box { border:1px solid var(--paper-line); border-radius:var(--radius); padding:18px; background:#fff; }
+  .stat-box .num { font-family:var(--font-serif); font-size:26px; font-weight:700; }
+  .stat-box .label { font-size:11px; color:var(--slate); text-transform:uppercase; letter-spacing:.06em; margin-top:4px; }
+  @media (min-width:600px) { .stat-grid { grid-template-columns:repeat(4,1fr); } }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar" id="topbar"></div>
+
+    <div class="list-head">
+      <h1 style="font-size:22px;">Dashboard</h1>
+    </div>
+
+    <div id="error-box"></div>
+    <div id="stats" class="stat-grid">
+      <p class="muted">Loading…</p>
+    </div>
+
+    <div class="list-head" style="margin-top:8px;">
+      <h3 style="margin:0;">Needs attention</h3>
+    </div>
+    <div class="card" id="attention-list">
+      <p class="muted">Loading…</p>
+    </div>
+  </div>
+
+<script src="api.js"></script>
+<script src="nav.js"></script>
+<script>
+Auth.requireLogin();
+renderTopbar("dashboard");
+
+const statsEl = document.getElementById("stats");
+const attentionEl = document.getElementById("attention-list");
+const errorBox = document.getElementById("error-box");
+
+async function load() {
+  try {
+    const { data: invoices } = await apiFetch("/invoices/");
+    renderStats(invoices);
+    renderAttention(invoices);
+  } catch (err) {
+    showError(errorBox, err.message);
+  }
+}
+
+function renderStats(invoices) {
+  const now = new Date();
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
+
+  const paid = invoices.filter(i => i.status === "PAID");
+  const outstanding = invoices.filter(i => i.status === "SENT" || i.status === "OVERDUE");
+  const overdue = invoices.filter(i => i.status === "OVERDUE");
+  const paidThisMonth = paid.filter(i => {
+    if (!i.paid_at) return false;
+    const d = new Date(i.paid_at);
+    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+  });
+
+  const sum = list => list.reduce((total, i) => total + Number(i.total), 0);
+  const currency = invoices[0] ? invoices[0].currency : "USD";
+
+  statsEl.innerHTML = `
+    <div class="stat-box">
+      <div class="num">${formatMoney(sum(paid), currency)}</div>
+      <div class="label">Total revenue</div>
+    </div>
+    <div class="stat-box">
+      <div class="num">${formatMoney(sum(outstanding), currency)}</div>
+      <div class="label">Outstanding (${outstanding.length})</div>
+    </div>
+    <div class="stat-box">
+      <div class="num">${formatMoney(sum(paidThisMonth), currency)}</div>
+      <div class="label">Paid this month</div>
+    </div>
+    <div class="stat-box">
+      <div class="num" style="color:${overdue.length ? 'var(--stamp)' : 'inherit'};">${formatMoney(sum(overdue), currency)}</div>
+      <div class="label">Overdue (${overdue.length})</div>
+    </div>
+  `;
+}
+
+function renderAttention(invoices) {
+  const needsAttention = invoices.filter(i => i.status === "OVERDUE" || i.payment_proof_submitted_at)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 8);
+
+  if (!needsAttention.length) {
+    attentionEl.innerHTML = `<p class="muted">Nothing needs your attention right now.</p>`;
+    return;
+  }
+
+  attentionEl.innerHTML = needsAttention.map(inv => `
+    <a class="list-row" href="invoice-detail.html?id=${inv.id}" style="display:flex; text-decoration:none;">
+      <div>
+        <div class="primary mono">${escapeHtml(inv.number)}</div>
+        <div class="secondary">
+          ${escapeHtml(inv.client_name)}
+          ${inv.status === "OVERDUE" ? " · overdue" : ""}
+          ${inv.payment_proof_submitted_at ? " · proof submitted" : ""}
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:14px;">
+        <span class="status-pill ${inv.status}">${inv.status}</span>
+        <span class="amount">${formatMoney(inv.total, inv.currency)}</span>
+      </div>
+    </a>
+  `).join("");
+}
+
+load();
+</script>
+</body>
+</html>

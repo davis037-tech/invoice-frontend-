@@ -74,12 +74,27 @@ h1, h2, h3 {
   padding-bottom: 20px;
   margin-bottom: 28px;
   border-bottom: 1px solid var(--ink);
+  position: relative;
 }
 
 .topbar .brand {
   font-family: var(--font-serif);
   font-size: 20px;
   font-weight: 700;
+}
+
+.nav-toggle {
+  display: none;
+  background: none;
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  cursor: pointer;
 }
 
 .topbar nav {
@@ -99,6 +114,36 @@ h1, h2, h3 {
 .topbar nav a:hover, .topbar nav a.active {
   color: var(--ink);
   border-bottom-color: var(--stamp);
+}
+
+@media (max-width: 640px) {
+  .nav-toggle { display: inline-block; }
+
+  .topbar nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 12px;
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+    border-radius: var(--radius);
+    flex-direction: column;
+    gap: 0;
+    padding: 6px 0;
+    z-index: 30;
+    box-shadow: 0 6px 18px rgba(27,36,48,0.12);
+  }
+  .topbar nav.open { display: flex; }
+  .topbar nav a {
+    padding: 13px 18px;
+    border-bottom: none;
+  }
+  .topbar nav a:hover, .topbar nav a.active {
+    background: var(--paper-line);
+    border-bottom: none;
+  }
 }
 
 /* ===== Cards / surfaces ===== */
@@ -299,7 +344,19 @@ input:focus, select:focus, textarea:focus {
   justify-content: space-between;
   margin-bottom: 36px;
   padding-bottom: 24px;
+  padding-right: 130px; /* clears the status stamp in the top-right corner */
   border-bottom: 2px solid var(--ink);
+}
+
+@media (max-width: 480px) {
+  .stamp {
+    width: 84px;
+    height: 84px;
+    top: 20px;
+    right: 20px;
+    font-size: 12px;
+  }
+  .invoice-head { padding-right: 96px; }
 }
 
 .invoice-head .num {

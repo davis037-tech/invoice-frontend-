@@ -122,6 +122,7 @@ function render(inv) {
       </div>
 
       ${inv.notes ? `<div style="margin-top:28px; padding-top:16px; border-top:1px solid var(--paper-line);"><div class="eyebrow" style="margin-bottom:6px;">Notes</div><p class="muted">${escapeHtml(inv.notes)}</p></div>` : ""}
+      ${inv.last_reminder_sent_at ? `<p class="muted" style="font-size:12px; margin-top:12px;">Last overdue reminder sent ${formatDate(inv.last_reminder_sent_at)}</p>` : ""}
     </div>
 
     ${inv.payment_proof_submitted_at ? `

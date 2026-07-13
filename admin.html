@@ -28,6 +28,17 @@
 
     <div id="error-box"></div>
     <div id="stats" class="stat-grid"></div>
+
+    <div class="list-head" style="margin-top:8px;">
+      <h3 style="margin:0;">Default weekly limits per plan</h3>
+    </div>
+    <div class="card" id="plan-limits-card" style="margin-bottom:24px;">
+      <p class="muted">Loading…</p>
+    </div>
+
+    <div class="list-head" style="margin-top:8px;">
+      <h3 style="margin:0;">Accounts</h3>
+    </div>
     <div id="tenants-list"><p class="muted">Loading…</p></div>
   </div>
 
@@ -134,7 +145,53 @@ async function saveTenant(id, row) {
   }
 }
 
+async function loadPlanLimits() {
+  try {
+    const { data } = await apiFetch("/admin/plan-limits");
+    const card = document.getElementById("plan-limits-card");
+    card.innerHTML = `
+      <p class="muted" style="margin-top:0;">Applies to every account on that plan, unless a specific account has an override set below.</p>
+      <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end;">
+        ${Object.entries(data).map(([plan, limit]) => `
+          <label style="font-size:12px; color:#8a8378;">
+            ${plan}
+            <input type="number" min="0" data-plan-limit="${plan}" value="${limit}" style="width:90px; display:block; margin-top:4px;" />
+          </label>
+        `).join("")}
+        <button class="btn btn-ghost" id="save-plan-limits-btn">Save defaults</button>
+        <span class="muted" id="plan-limits-status" style="font-size:12px;"></span>
+      </div>
+    `;
+    document.getElementById("save-plan-limits-btn").addEventListener("click", savePlanLimits);
+  } catch (err) {
+    showError(errorBox, err.message);
+  }
+}
+
+async function savePlanLimits() {
+  const inputs = document.querySelectorAll("[data-plan-limit]");
+  const payload = {};
+  inputs.forEach(input => { payload[input.dataset.planLimit] = parseInt(input.value, 10) || 0; });
+  const statusEl = document.getElementById("plan-limits-status");
+  const btn = document.getElementById("save-plan-limits-btn");
+
+  btn.disabled = true;
+  statusEl.textContent = "Saving…";
+  try {
+    await apiFetch("/admin/plan-limits", { method: "PUT", body: payload });
+    statusEl.textContent = "Saved";
+    setTimeout(() => { statusEl.textContent = ""; }, 1500);
+    loadTenants(); // refresh so tenant rows reflect the new defaults
+  } catch (err) {
+    statusEl.textContent = "";
+    showError(errorBox, err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 loadStats();
+loadPlanLimits();
 loadTenants();
 </script>
 </body>
