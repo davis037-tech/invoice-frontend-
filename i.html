@@ -6,94 +6,169 @@
 <title>Invoice</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css" />
 <style>
-  /* ===== Black & gold reskin — scoped to this page only ===== */
   :root {
-    --ink: #EDE6D6;        /* parchment text on black */
-    --paper: #0E0D0B;      /* near-black background */
-    --paper-line: rgba(201, 162, 39, 0.28);  /* gold hairline instead of cream rule */
-    --stamp: #C9A227;      /* gold accent — replaces the red stamp everywhere it's used */
-    --slate: #A69A78;      /* warm muted gold-grey, secondary text */
-    --slate-soft: #6E6650;
-    --ok-green: #9CB37A;
-    --panel: #17140F;      /* card / input surface, one step up from the page background */
+    --gold: #B08D57;
+    --gold-bright: #C9A876;
+    --ink: #241F19;
+    --muted: #8A8175;
+    --line: #E7E1D6;
+    --panel: #F6F1E7;
+    --paper: #FFFFFF;
   }
-
-  body { background: var(--paper); }
-
-  .card, .invoice-doc, input, select, textarea {
-    background: var(--panel);
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #F0ECE3;
     color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  input, select, textarea { border-color: var(--paper-line); }
-  input::placeholder, textarea::placeholder { color: #5C5643; }
+  .doc {
+    max-width: 640px;
+    margin: 0 auto;
+    background: var(--paper);
+    min-height: 100vh;
+  }
+  .gold-bar { height: 8px; background: var(--gold); }
+  .pad { padding: 32px 28px; }
 
-  .btn-stamp { color: #14120F; font-weight: 600; }
-  .btn-stamp:hover { background: #E3C34C; border-color: #E3C34C; }
-  .btn-ghost:hover { border-color: var(--stamp); }
-
-  .stamp {
-    mix-blend-mode: normal;
-    box-shadow: 0 0 26px rgba(201, 162, 39, 0.16);
-    background: radial-gradient(circle at 35% 30%, rgba(201, 162, 39, 0.08), transparent 65%);
+  .label {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 600;
   }
 
-  .brandmark {
-    display: flex; align-items: center; gap: 10px;
+  .inv-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
     margin-bottom: 32px;
   }
-  .brandmark .mark {
-    width: 26px; height: 26px; border-radius: 50%;
-    border: 1px solid var(--stamp);
-    display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-serif); font-size: 13px; color: var(--stamp);
+  .inv-header h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 34px;
+    letter-spacing: 0.02em;
+    color: var(--gold);
+    margin: 0 0 18px;
   }
-  .brandmark .name {
-    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.18em;
-    text-transform: uppercase; color: var(--slate);
+  .meta-row { margin-bottom: 10px; }
+  .meta-row .label { display: block; margin-bottom: 2px; }
+  .meta-row .value { font-size: 14px; font-weight: 500; }
+
+  .parties { display: flex; flex-direction: column; gap: 18px; text-align: right; }
+  .party-block .label { margin-bottom: 6px; }
+  .party-name { font-weight: 600; font-size: 14px; }
+  .party-detail { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+  table.items {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: 13px;
+  }
+  table.items thead th {
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 600;
+    padding-bottom: 10px;
+    border-bottom: 1.5px solid var(--gold);
+  }
+  table.items th.num, table.items td.num { text-align: right; }
+  table.items tbody td {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  table.items tbody tr:last-child td { border-bottom: none; }
+
+  .totals { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; margin-bottom: 28px; }
+  .totals .row { display: flex; gap: 24px; font-size: 13px; color: var(--muted); }
+  .totals .row .t-label { letter-spacing: 0.04em; text-transform: uppercase; font-size: 11px; }
+  .totals .row .t-value { min-width: 90px; text-align: right; color: var(--ink); }
+
+  .highlight-bar {
+    display: flex;
+    justify-content: space-between;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 18px 22px;
+    margin-bottom: 8px;
+  }
+  .highlight-bar .big { font-family: 'Source Serif 4', serif; font-size: 20px; font-weight: 700; margin-top: 4px; }
+  .highlight-bar .gold { color: var(--gold); }
+
+  .footer-band { background: var(--panel); padding: 28px; }
+  .footer-band p { margin: 0 0 20px; font-size: 14px; }
+  .footer-cols { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+  .footer-cols .label { margin-bottom: 4px; }
+  .footer-cols .value { font-size: 13px; }
+
+  .step-nav { text-align: center; margin: 20px 0; }
+  .btn-gold {
+    display: inline-block;
+    background: var(--gold);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 13px 30px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .btn-gold:hover { background: var(--gold-bright); }
+  .btn-outline {
+    display: inline-block;
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 12px 20px;
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+    text-decoration: none;
   }
 
-  .step-indicator {
-    display: flex; align-items: center; gap: 10px;
-    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em;
-    text-transform: uppercase; color: var(--slate-soft);
-    margin-bottom: 28px;
+  .pay-card { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 24px; margin-bottom: 16px; }
+  .pay-card .label { margin-bottom: 10px; }
+  .pay-card textarea, .pay-card input[type=file] {
+    width: 100%;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    margin-top: 4px;
+    background: #fff;
+    color: var(--ink);
   }
-  .step-indicator .step.active { color: var(--stamp); }
-  .step-indicator .divider { width: 22px; height: 1px; background: var(--paper-line); }
+  .field { margin-bottom: 14px; }
+  .field label { font-size: 12px; color: var(--muted); }
 
-  #step-invoice, #step-payment {
-    transition: opacity 0.25s ease;
+  .error-banner { background: #FBEAEA; border: 1px solid #E3B8B8; color: #8A2E2E; padding: 12px 14px; border-radius: 4px; font-size: 13px; margin: 16px 28px 0; }
+  .status-tag {
+    display: inline-block; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 3px; font-weight: 600;
   }
-  @media (prefers-reduced-motion: reduce) {
-    #step-invoice, #step-payment { transition: none; }
-  }
-
-  .grand-total {
-    font-family: var(--font-serif);
-    font-size: 30px;
-    font-weight: 700;
-    color: var(--stamp);
-  }
+  .status-tag.PAID { background: #E4EFE1; color: #4C7A3F; }
+  .status-tag.OVERDUE { background: #FBEAEA; color: #8A2E2E; }
+  .status-tag.CANCELLED { background: #EEEBE5; color: var(--muted); }
 </style>
 </head>
-<body class="no-rule">
-  <div class="shell" style="max-width: 680px;">
-    <div class="brandmark">
-      <div class="mark">L</div>
-      <div class="name">Ledger</div>
-    </div>
-
+<body>
+  <div class="doc">
+    <div class="gold-bar"></div>
     <div id="error-box"></div>
-    <div id="step-indicator" class="step-indicator" style="display:none;">
-      <span class="step" id="step-label-invoice">Invoice</span>
-      <span class="divider"></span>
-      <span class="step" id="step-label-payment">Payment</span>
-    </div>
-
     <div id="invoice-container">
-      <p class="muted">Loading…</p>
+      <div class="pad"><p class="muted">Loading…</p></div>
     </div>
   </div>
 
@@ -103,7 +178,6 @@ const params = new URLSearchParams(window.location.search);
 const token = params.get("token");
 const container = document.getElementById("invoice-container");
 const errorBox = document.getElementById("error-box");
-const stepIndicator = document.getElementById("step-indicator");
 
 async function loadInvoice() {
   try {
@@ -115,6 +189,7 @@ async function loadInvoice() {
 }
 
 function render(inv) {
+  const supplier = inv.supplier || {};
   const itemsRows = inv.items.map(item => `
     <tr>
       <td>${escapeHtml(item.description)}</td>
@@ -128,114 +203,128 @@ function render(inv) {
 
   container.innerHTML = `
     <div id="step-invoice">
-      <div class="invoice-doc">
-        ${inv.status !== "DRAFT" && inv.status !== "OVERDUE" ? `<div class="stamp ${inv.status}">${inv.status}</div>` : ""}
-        ${inv.status === "OVERDUE" ? `<div class="stamp OVERDUE">OVERDUE</div>` : ""}
-
-        <div class="invoice-head">
+      <div class="pad">
+        <div class="inv-header">
           <div>
-            <div class="eyebrow">Invoice for</div>
-            <h1 style="font-size:26px;">${escapeHtml(inv.client_name)}</h1>
-            <div class="muted">${escapeHtml(inv.client_email)}</div>
+            <h1>Invoice</h1>
+            <div class="meta-row"><span class="label">Invoice</span><span class="value">${escapeHtml(inv.number)}</span></div>
+            <div class="meta-row"><span class="label">Issue date</span><span class="value">${formatDate(inv.issue_date)}</span></div>
+            <div class="meta-row"><span class="label">Due date</span><span class="value">${formatDate(inv.due_date)}</span></div>
+            ${inv.status !== "SENT" ? `<span class="status-tag ${inv.status}" style="margin-top:6px;">${inv.status}</span>` : ""}
           </div>
-          <div style="text-align:right;">
-            <div class="num">${escapeHtml(inv.number)}</div>
-            <div class="muted" style="font-size:13px; margin-top:6px;">Issued ${formatDate(inv.issue_date)}</div>
-            <div class="muted" style="font-size:13px;">Due ${formatDate(inv.due_date)}</div>
+          <div class="parties">
+            <div class="party-block">
+              <div class="label">Supplier</div>
+              <div class="party-name">${escapeHtml(supplier.business_name || "")}</div>
+              ${supplier.business_address ? `<div class="party-detail">${escapeHtml(supplier.business_address)}</div>` : ""}
+            </div>
+            <div class="party-block">
+              <div class="label">Client</div>
+              <div class="party-name">${escapeHtml(inv.client_name)}</div>
+              <div class="party-detail">${escapeHtml(inv.client_email)}</div>
+              ${inv.client_address ? `<div class="party-detail">${escapeHtml(inv.client_address)}</div>` : ""}
+            </div>
           </div>
         </div>
 
-        <table class="line-items">
+        <table class="items">
           <thead>
-            <tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th></tr>
+            <tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Total</th></tr>
           </thead>
           <tbody>${itemsRows}</tbody>
         </table>
 
         <div class="totals">
-          <div class="row"><span>Subtotal</span><span>${formatMoney(inv.subtotal, inv.currency)}</span></div>
-          <div class="row"><span>Tax (${(inv.tax_rate * 100).toFixed(2)}%)</span><span>${formatMoney(inv.tax_amount, inv.currency)}</span></div>
-          <div class="row grand"><span>Total due</span><span class="grand-total" style="font-size:18px;">${formatMoney(inv.total, inv.currency)}</span></div>
+          <div class="row"><span class="t-label">Subtotal</span><span class="t-value">${formatMoney(inv.subtotal, inv.currency)}</span></div>
+          <div class="row"><span class="t-label">Tax (${(inv.tax_rate * 100).toFixed(2)}%)</span><span class="t-value">${formatMoney(inv.tax_amount, inv.currency)}</span></div>
+          <div class="row"><span class="t-label" style="color:var(--ink); font-weight:600;">Total</span><span class="t-value" style="font-weight:700;">${formatMoney(inv.total, inv.currency)}</span></div>
         </div>
 
-        ${inv.notes ? `<div style="margin-top:28px; padding-top:16px; border-top:1px solid var(--paper-line);"><div class="eyebrow" style="margin-bottom:6px;">Notes</div><p class="muted">${escapeHtml(inv.notes)}</p></div>` : ""}
+        <div class="highlight-bar">
+          <div>
+            <span class="label">Due date</span>
+            <div class="big">${formatDate(inv.due_date)}</div>
+          </div>
+          <div style="text-align:right;">
+            <span class="label">Amount due</span>
+            <div class="big gold">${inv.status === "PAID" ? "Paid" : formatMoney(inv.total, inv.currency)}</div>
+          </div>
+        </div>
+
+        ${inv.notes ? `<div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--line);"><div class="label" style="margin-bottom:6px;">Notes</div><p style="font-size:13px; color:var(--muted);">${escapeHtml(inv.notes)}</p></div>` : ""}
       </div>
 
       ${showBankDetails ? `
-        <div style="text-align:center; margin-top:24px;">
-          <button class="btn btn-stamp" id="continue-btn" style="padding:14px 32px; font-size:13px;">Continue to payment →</button>
-          ${inv.payment_proof_submitted_at ? `<p class="muted" style="font-size:13px; margin-top:12px;">Payment confirmation submitted ${formatDate(inv.payment_proof_submitted_at)} — awaiting review.</p>` : ""}
+        <div class="step-nav">
+          <button class="btn-gold" id="continue-btn">Continue to payment →</button>
+          ${inv.payment_proof_submitted_at ? `<p style="font-size:12px; color:var(--muted); margin-top:12px;">Payment confirmation submitted ${formatDate(inv.payment_proof_submitted_at)} — awaiting review.</p>` : ""}
         </div>
       ` : ""}
-      ${inv.status === "PAID" ? `<p class="muted" style="text-align:center; margin-top:20px;">This invoice has been paid in full. Thank you.</p>` : ""}
     </div>
 
     ${showBankDetails ? `
     <div id="step-payment" style="display:none;">
-      <a href="#" id="back-btn" class="text-link" style="display:inline-block; margin-bottom:20px;">← Back to invoice</a>
+      <div class="pad" style="padding-top:8px;">
+        <a href="#" id="back-btn" class="btn-outline" style="margin-bottom:20px;">← Back to invoice</a>
 
-      <div class="card" style="margin-bottom:16px;">
-        <div class="eyebrow" style="margin-bottom:10px;">Pay by bank transfer</div>
-        <p style="white-space:pre-line; margin:0;">${escapeHtml(inv.bank_transfer_details)}</p>
-      </div>
+        <div class="pay-card">
+          <div class="label">Pay by bank transfer</div>
+          <p style="white-space:pre-line; font-size:14px; margin:0;">${escapeHtml(inv.bank_transfer_details)}</p>
+        </div>
 
-      <div class="card">
-        <div class="eyebrow" style="margin-bottom:10px;">Already paid?</div>
-        ${inv.payment_proof_submitted_at ? `
-          <p class="muted" style="margin:0 0 12px;">
-            You submitted payment confirmation on ${formatDate(inv.payment_proof_submitted_at)}.
-            We'll confirm receipt shortly. Sent the wrong details? You can submit again below.
-          </p>
-        ` : `
-          <p class="muted" style="margin:0 0 12px;">
-            Once you've made the transfer, let us know so we can confirm it —
-            add your transaction reference and/or a photo of the receipt.
-          </p>
-        `}
-        <div id="proof-error"></div>
-        <form id="proof-form">
-          <div class="field">
-            <label for="proof-note">Transaction reference / note</label>
-            <textarea id="proof-note" name="note" rows="3" placeholder="e.g. Bank ref #123456, transferred 11 Jul"></textarea>
-          </div>
-          <div class="field">
-            <label for="proof-image">Receipt photo <span class="muted">(optional)</span></label>
-            <input id="proof-image" name="image" type="file" accept="image/*" />
-          </div>
-          <button class="btn btn-stamp" type="submit" id="proof-submit-btn">Submit payment confirmation</button>
-        </form>
+        <div class="pay-card">
+          <div class="label">Already paid?</div>
+          ${inv.payment_proof_submitted_at ? `
+            <p style="font-size:13px; color:var(--muted);">
+              You submitted payment confirmation on ${formatDate(inv.payment_proof_submitted_at)}.
+              We'll confirm receipt shortly. Sent the wrong details? You can submit again below.
+            </p>
+          ` : `
+            <p style="font-size:13px; color:var(--muted);">
+              Once you've made the transfer, let us know so we can confirm it —
+              add your transaction reference and/or a photo of the receipt.
+            </p>
+          `}
+          <div id="proof-error"></div>
+          <form id="proof-form">
+            <div class="field">
+              <label for="proof-note">Transaction reference / note</label>
+              <textarea id="proof-note" name="note" rows="3" placeholder="e.g. Bank ref #123456, transferred 11 Jul"></textarea>
+            </div>
+            <div class="field">
+              <label for="proof-image">Receipt photo (optional)</label>
+              <input id="proof-image" name="image" type="file" accept="image/*" />
+            </div>
+            <button class="btn-gold" type="submit" id="proof-submit-btn" style="border:none; width:100%;">Submit payment confirmation</button>
+          </form>
+        </div>
       </div>
     </div>
     ` : ""}
+
+    <div class="footer-band">
+      <p>Thank you for your business.</p>
+      <div class="footer-cols">
+        ${supplier.business_name ? `<div><div class="label">From</div><div class="value">${escapeHtml(supplier.business_name)}</div></div>` : ""}
+        <div><div class="label">Invoice</div><div class="value">${escapeHtml(inv.number)}</div></div>
+      </div>
+    </div>
   `;
 
   if (showBankDetails) {
-    stepIndicator.style.display = "flex";
     const stepInvoice = document.getElementById("step-invoice");
     const stepPayment = document.getElementById("step-payment");
-    const labelInvoice = document.getElementById("step-label-invoice");
-    const labelPayment = document.getElementById("step-label-payment");
-
-    const goToPayment = () => {
+    document.getElementById("continue-btn").addEventListener("click", () => {
       stepInvoice.style.display = "none";
       stepPayment.style.display = "block";
-      labelInvoice.classList.remove("active");
-      labelPayment.classList.add("active");
       window.scrollTo({ top: 0, behavior: "smooth" });
-    };
-    const goToInvoice = () => {
+    });
+    document.getElementById("back-btn").addEventListener("click", (e) => {
+      e.preventDefault();
       stepPayment.style.display = "none";
       stepInvoice.style.display = "block";
-      labelPayment.classList.remove("active");
-      labelInvoice.classList.add("active");
       window.scrollTo({ top: 0, behavior: "smooth" });
-    };
-
-    labelInvoice.classList.add("active");
-    document.getElementById("continue-btn").addEventListener("click", goToPayment);
-    document.getElementById("back-btn").addEventListener("click", (e) => { e.preventDefault(); goToInvoice(); });
-  } else {
-    stepIndicator.style.display = "none";
+    });
   }
 
   const proofForm = document.getElementById("proof-form");
