@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>New invoice — Ledger</title>
+<title id="page-title">New invoice — Ledger</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css" />
@@ -13,7 +13,7 @@
     <div class="topbar" id="topbar"></div>
 
     <div class="list-head">
-      <h1 style="font-size:22px;">New invoice</h1>
+      <h1 style="font-size:22px;" id="page-heading">New invoice</h1>
       <a class="text-link" href="invoices.html">← Back to invoices</a>
     </div>
 
@@ -113,6 +113,9 @@
 Auth.requireLogin();
 renderTopbar("invoices");
 
+const params = new URLSearchParams(window.location.search);
+const editId = params.get("edit");
+
 const lineItemsEl = document.getElementById("line-items");
 const template = document.getElementById("line-item-template");
 const errorBox = document.getElementById("error-box");
@@ -127,13 +130,17 @@ async function loadQuota() {
     // Non-critical — don't block the form if this fails.
   }
 }
-loadQuota();
 const clientSelect = document.getElementById("client_select");
 let clientsById = {};
 
-function addLineItem() {
+function addLineItem(prefill) {
   const row = template.content.cloneNode(true);
   const el = row.querySelector(".line-item-row");
+  if (prefill) {
+    el.querySelector(".li-description").value = prefill.description;
+    el.querySelector(".li-quantity").value = prefill.quantity;
+    el.querySelector(".li-unit-price").value = prefill.unit_price;
+  }
   el.querySelector(".li-remove").addEventListener("click", () => {
     el.remove();
     updateTotals();
@@ -213,20 +220,54 @@ document.getElementById("invoice-form").addEventListener("submit", async (e) => 
 
   const submitBtn = document.getElementById("submit-btn");
   submitBtn.disabled = true;
-  submitBtn.textContent = "Creating…";
+  submitBtn.textContent = editId ? "Saving…" : "Creating…";
 
   try {
-    const data = await apiFetch("/invoices/", { method: "POST", body: payload });
+    const data = editId
+      ? await apiFetch(`/invoices/${editId}`, { method: "PUT", body: payload })
+      : await apiFetch("/invoices/", { method: "POST", body: payload });
     window.location.href = `invoice-detail.html?id=${data.data.id}`;
   } catch (err) {
     showError(errorBox, err.message);
     submitBtn.disabled = false;
-    submitBtn.textContent = "Create invoice";
+    submitBtn.textContent = editId ? "Save changes" : "Create invoice";
   }
 });
 
+async function loadForEdit() {
+  document.getElementById("page-title").textContent = "Edit invoice — Ledger";
+  document.getElementById("page-heading").textContent = "Edit invoice";
+  document.getElementById("submit-btn").textContent = "Save changes";
+  document.getElementById("quota-note").style.display = "none";
+
+  try {
+    const { data: inv } = await apiFetch(`/invoices/${editId}`);
+    if (inv.status !== "DRAFT") {
+      showError(errorBox, "Only draft invoices can be edited.");
+      document.getElementById("invoice-form").style.display = "none";
+      return;
+    }
+    document.getElementById("client_name").value = inv.client_name;
+    document.getElementById("client_email").value = inv.client_email;
+    document.getElementById("client_address").value = inv.client_address || "";
+    document.getElementById("tax_rate").value = inv.tax_rate;
+    document.getElementById("currency").value = inv.currency;
+    document.getElementById("payment_terms").value = inv.payment_terms;
+    document.getElementById("notes").value = inv.notes || "";
+    inv.items.forEach(item => addLineItem(item));
+    updateTotals();
+  } catch (err) {
+    showError(errorBox, err.message);
+  }
+}
+
 loadClients();
-addLineItem();
+if (editId) {
+  loadForEdit();
+} else {
+  loadQuota();
+  addLineItem();
+}
 </script>
 </body>
 </html>

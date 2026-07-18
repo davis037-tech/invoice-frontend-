@@ -49,7 +49,10 @@ function render(inv) {
 
   actionsEl.innerHTML = `
     ${inv.status === "DRAFT" ? `<button class="btn" id="send-btn">Generate invoice link</button>` : ""}
+    ${inv.status === "DRAFT" ? `<a class="btn btn-ghost" href="invoice-new.html?edit=${inv.id}">Edit</a>` : ""}
+    ${inv.status === "DRAFT" ? `<button class="btn btn-ghost" id="delete-btn">Delete</button>` : ""}
     ${inv.status === "SENT" || inv.status === "OVERDUE" ? `<button class="btn" id="mark-paid-btn">Mark as paid</button>` : ""}
+    ${inv.status === "SENT" || inv.status === "OVERDUE" ? `<button class="btn btn-ghost" id="cancel-btn">Cancel invoice</button>` : ""}
     ${inv.status !== "DRAFT" ? `<a class="btn btn-ghost" href="i.html?token=${inv.public_token}" target="_blank">Open link</a>` : ""}
   `;
 
@@ -169,6 +172,36 @@ function render(inv) {
         showError(errorBox, err.message);
         markPaidBtn.disabled = false;
         markPaidBtn.textContent = "Mark as paid";
+      }
+    });
+  }
+
+  const deleteBtn = document.getElementById("delete-btn");
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", async () => {
+      if (!confirm("Delete this draft invoice? This can't be undone.")) return;
+      deleteBtn.disabled = true;
+      try {
+        await apiFetch(`/invoices/${invoiceId}`, { method: "DELETE" });
+        window.location.href = "invoices.html";
+      } catch (err) {
+        showError(errorBox, err.message);
+        deleteBtn.disabled = false;
+      }
+    });
+  }
+
+  const cancelBtn = document.getElementById("cancel-btn");
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", async () => {
+      if (!confirm("Cancel this invoice? The client will no longer be able to pay it.")) return;
+      cancelBtn.disabled = true;
+      try {
+        await apiFetch(`/invoices/${invoiceId}/cancel`, { method: "POST" });
+        loadInvoice();
+      } catch (err) {
+        showError(errorBox, err.message);
+        cancelBtn.disabled = false;
       }
     });
   }
