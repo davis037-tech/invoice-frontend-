@@ -65,6 +65,44 @@ async function apiFetch(path, { method = "GET", body, skipAuth = false } = {}) {
   return data;
 }
 
+/**
+ * Downloads a binary response (like a PDF) and saves it via the browser.
+ * Separate from apiFetch because that always parses JSON — this expects
+ * a file on success but still needs to surface a JSON error message if
+ * the server rejects the request (e.g. quota exceeded).
+ */
+async function apiDownload(path, filename) {
+  const headers = {};
+  const token = Auth.getAccessToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  let res = await fetch(`${API_BASE}${path}`, { headers });
+
+  if (res.status === 401) {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      headers["Authorization"] = `Bearer ${Auth.getAccessToken()}`;
+      res = await fetch(`${API_BASE}${path}`, { headers });
+    }
+  }
+
+  if (!res.ok) {
+    let data = null;
+    try { data = await res.json(); } catch (_) {}
+    throw new ApiError(extractErrorMessage(data) || `Download failed (${res.status})`, res.status, data);
+  }
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 async function tryRefresh() {
   const refreshToken = Auth.getRefreshToken();
   if (!refreshToken) return false;

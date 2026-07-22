@@ -37,6 +37,13 @@
     </div>
 
     <div class="list-head" style="margin-top:8px;">
+      <h3 style="margin:0;">Default weekly PDF downloads per plan</h3>
+    </div>
+    <div class="card" id="pdf-plan-limits-card" style="margin-bottom:24px;">
+      <p class="muted">Loading…</p>
+    </div>
+
+    <div class="list-head" style="margin-top:8px;">
       <h3 style="margin:0;">Accounts</h3>
     </div>
     <div id="tenants-list"><p class="muted">Loading…</p></div>
@@ -93,7 +100,8 @@ function render(tenants) {
           <div class="secondary">${escapeHtml(t.owner_email || "—")} · joined ${formatDate(t.created_at)}</div>
         </div>
         <div style="text-align:right; font-size:13px;">
-          <div>${t.weekly_used} / ${t.weekly_limit} this week</div>
+          <div>${t.weekly_used} / ${t.weekly_limit} invoices this week</div>
+          <div>${t.pdf_weekly_used} / ${t.pdf_weekly_limit} PDFs this week</div>
           <div class="muted" style="font-size:12px;">${t.total_invoices} total</div>
         </div>
       </div>
@@ -105,8 +113,11 @@ function render(tenants) {
             ${PLAN_OPTIONS.map(p => `<option value="${p}" ${p === t.plan ? "selected" : ""}>${p}</option>`).join("")}
           </select>
         </label>
-        <label class="muted" style="font-size:12px;">Override weekly limit
+        <label class="muted" style="font-size:12px;">Override invoice limit
           <input type="number" min="0" data-override placeholder="none" value="${t.invoice_limit_override ?? ""}" style="width:80px;" />
+        </label>
+        <label class="muted" style="font-size:12px;">Override PDF limit
+          <input type="number" min="0" data-pdf-override placeholder="none" value="${t.pdf_limit_override ?? ""}" style="width:80px;" />
         </label>
         <button class="btn btn-ghost" data-save>Save</button>
         <span class="muted save-status" style="font-size:12px;"></span>
@@ -125,6 +136,8 @@ async function saveTenant(id, row) {
   const plan = row.querySelector("[data-plan]").value;
   const overrideRaw = row.querySelector("[data-override]").value.trim();
   const override = overrideRaw === "" ? null : parseInt(overrideRaw, 10);
+  const pdfOverrideRaw = row.querySelector("[data-pdf-override]").value.trim();
+  const pdfOverride = pdfOverrideRaw === "" ? null : parseInt(pdfOverrideRaw, 10);
   const statusEl = row.querySelector(".save-status");
   const btn = row.querySelector("[data-save]");
 
@@ -133,7 +146,7 @@ async function saveTenant(id, row) {
   try {
     await apiFetch(`/admin/tenants/${id}`, {
       method: "PUT",
-      body: { plan, invoice_limit_override: override },
+      body: { plan, invoice_limit_override: override, pdf_limit_override: pdfOverride },
     });
     statusEl.textContent = "Saved";
     setTimeout(() => { statusEl.textContent = ""; }, 1500);
@@ -190,8 +203,54 @@ async function savePlanLimits() {
   }
 }
 
+async function loadPdfPlanLimits() {
+  try {
+    const { data } = await apiFetch("/admin/pdf-plan-limits");
+    const card = document.getElementById("pdf-plan-limits-card");
+    card.innerHTML = `
+      <p class="muted" style="margin-top:0;">Applies to every account on that plan, unless a specific account has an override set below.</p>
+      <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end;">
+        ${Object.entries(data).map(([plan, limit]) => `
+          <label style="font-size:12px; color:#8a8378;">
+            ${plan}
+            <input type="number" min="0" data-pdf-plan-limit="${plan}" value="${limit}" style="width:90px; display:block; margin-top:4px;" />
+          </label>
+        `).join("")}
+        <button class="btn btn-ghost" id="save-pdf-plan-limits-btn">Save defaults</button>
+        <span class="muted" id="pdf-plan-limits-status" style="font-size:12px;"></span>
+      </div>
+    `;
+    document.getElementById("save-pdf-plan-limits-btn").addEventListener("click", savePdfPlanLimits);
+  } catch (err) {
+    showError(errorBox, err.message);
+  }
+}
+
+async function savePdfPlanLimits() {
+  const inputs = document.querySelectorAll("[data-pdf-plan-limit]");
+  const payload = {};
+  inputs.forEach(input => { payload[input.dataset.pdfPlanLimit] = parseInt(input.value, 10) || 0; });
+  const statusEl = document.getElementById("pdf-plan-limits-status");
+  const btn = document.getElementById("save-pdf-plan-limits-btn");
+
+  btn.disabled = true;
+  statusEl.textContent = "Saving…";
+  try {
+    await apiFetch("/admin/pdf-plan-limits", { method: "PUT", body: payload });
+    statusEl.textContent = "Saved";
+    setTimeout(() => { statusEl.textContent = ""; }, 1500);
+    loadTenants();
+  } catch (err) {
+    statusEl.textContent = "";
+    showError(errorBox, err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 loadStats();
 loadPlanLimits();
+loadPdfPlanLimits();
 loadTenants();
 </script>
 </body>

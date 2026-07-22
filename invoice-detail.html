@@ -44,6 +44,19 @@ async function loadInvoice() {
   }
 }
 
+async function loadPdfQuota() {
+  try {
+    const { data } = await apiFetch("/invoices/pdf-quota");
+    const note = document.getElementById("pdf-quota-note");
+    if (note) {
+      note.textContent = `${data.remaining} of ${data.limit} PDF downloads remaining this week`;
+      if (data.remaining === 0) note.style.color = "var(--stamp-red, #a33)";
+    }
+  } catch (err) {
+    // Non-critical — don't block the page if this fails.
+  }
+}
+
 function render(inv) {
   const publicUrl = `${window.location.origin}/i.html?token=${inv.public_token}`;
 
@@ -54,7 +67,25 @@ function render(inv) {
     ${inv.status === "SENT" || inv.status === "OVERDUE" ? `<button class="btn" id="mark-paid-btn">Mark as paid</button>` : ""}
     ${inv.status === "SENT" || inv.status === "OVERDUE" ? `<button class="btn btn-ghost" id="cancel-btn">Cancel invoice</button>` : ""}
     ${inv.status !== "DRAFT" ? `<a class="btn btn-ghost" href="i.html?token=${inv.public_token}" target="_blank">Open link</a>` : ""}
+    <button class="btn btn-ghost" id="download-pdf-btn">Download PDF</button>
   `;
+  actionsEl.innerHTML += `<p class="muted" id="pdf-quota-note" style="font-size:12px; width:100%; margin-top:6px;"></p>`;
+  loadPdfQuota();
+
+  const downloadBtn = document.getElementById("download-pdf-btn");
+  downloadBtn.addEventListener("click", async () => {
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = "Downloading…";
+    try {
+      await apiDownload(`/invoices/${invoiceId}/pdf`, `${inv.number}.pdf`);
+      loadPdfQuota();
+    } catch (err) {
+      showError(errorBox, err.message);
+    } finally {
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = "Download PDF";
+    }
+  });
 
   if (inv.status !== "DRAFT") {
     actionsEl.innerHTML += `
