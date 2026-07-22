@@ -16,6 +16,12 @@
   .tenant-row select, .tenant-row input[type=number] { width:auto; display:inline-block; }
   .quota-bar { height:6px; background:#eee; border-radius:3px; overflow:hidden; margin-top:6px; }
   .quota-bar-fill { height:100%; background:var(--stamp-red, #a33); }
+  .login-chart { display:flex; align-items:flex-end; gap:8px; height:80px; margin-bottom:6px; }
+  .login-chart .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
+  .login-chart .bar { width:100%; background:var(--stamp-red, #a33); border-radius:3px 3px 0 0; min-height:2px; }
+  .login-chart .bar-label { font-size:10px; color:#8a8378; margin-top:4px; }
+  .login-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--paper-line); font-size:13px; }
+  .login-row:last-child { border-bottom:none; }
 </style>
 </head>
 <body>
@@ -40,6 +46,20 @@
       <h3 style="margin:0;">Default weekly PDF downloads per plan</h3>
     </div>
     <div class="card" id="pdf-plan-limits-card" style="margin-bottom:24px;">
+      <p class="muted">Loading…</p>
+    </div>
+
+    <div class="list-head" style="margin-top:8px;">
+      <h3 style="margin:0;">Login activity</h3>
+    </div>
+    <div class="card" id="login-daily-card" style="margin-bottom:12px;">
+      <p class="muted">Loading…</p>
+    </div>
+    <div style="margin-bottom:12px; display:flex; gap:8px;">
+      <button class="btn btn-ghost" data-login-range="today">Today</button>
+      <button class="btn btn-ghost" data-login-range="week">This week</button>
+    </div>
+    <div class="card" id="login-list-card" style="margin-bottom:24px;">
       <p class="muted">Loading…</p>
     </div>
 
@@ -248,9 +268,72 @@ async function savePdfPlanLimits() {
   }
 }
 
+let loginActivityData = null;
+let currentLoginRange = "week";
+
+async function loadLoginActivity() {
+  try {
+    const { data } = await apiFetch("/admin/login-activity");
+    loginActivityData = data;
+    renderLoginChart(data);
+    renderLoginList();
+  } catch (err) {
+    showError(errorBox, err.message);
+  }
+}
+
+function renderLoginChart(data) {
+  const card = document.getElementById("login-daily-card");
+  const maxCount = Math.max(1, ...data.daily.map(d => d.count));
+  card.innerHTML = `
+    <p class="muted" style="margin-top:0;">${data.unique_today} unique user${data.unique_today === 1 ? "" : "s"} logged in today · ${data.unique_this_week} this week</p>
+    <div class="login-chart">
+      ${data.daily.map(d => `
+        <div class="bar-col">
+          <div class="bar" style="height:${(d.count / maxCount) * 100}%;" title="${d.count} logins, ${d.unique_users} unique"></div>
+          <div class="bar-label">${d.date.slice(5)}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderLoginList() {
+  if (!loginActivityData) return;
+  const card = document.getElementById("login-list-card");
+  const now = new Date();
+  const todayKey = now.toISOString().slice(0, 10);
+
+  const filtered = currentLoginRange === "today"
+    ? loginActivityData.recent.filter(e => e.created_at.slice(0, 10) === todayKey)
+    : loginActivityData.recent;
+
+  if (!filtered.length) {
+    card.innerHTML = `<p class="muted">No logins ${currentLoginRange === "today" ? "yet today" : "this week"}.</p>`;
+    return;
+  }
+
+  card.innerHTML = filtered.map(e => `
+    <div class="login-row">
+      <span>${escapeHtml(e.email)}${e.tenant_name ? ` <span class="muted">· ${escapeHtml(e.tenant_name)}</span>` : ""}</span>
+      <span class="muted">${new Date(e.created_at).toLocaleString()}</span>
+    </div>
+  `).join("");
+}
+
+document.querySelectorAll("[data-login-range]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    currentLoginRange = btn.dataset.loginRange;
+    document.querySelectorAll("[data-login-range]").forEach(b => b.style.borderColor = "");
+    btn.style.borderColor = "var(--ink)";
+    renderLoginList();
+  });
+});
+
 loadStats();
 loadPlanLimits();
 loadPdfPlanLimits();
+loadLoginActivity();
 loadTenants();
 </script>
 </body>
