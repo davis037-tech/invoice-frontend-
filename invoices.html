@@ -99,7 +99,7 @@ function renderInvoices(invoices) {
       </div>
       <div style="flex:1; min-width:0;">
         <div class="primary mono">${escapeHtml(inv.number)}</div>
-        <div class="secondary">${escapeHtml(inv.client_name)} · created ${formatDate(inv.created_at)} · due ${formatDate(inv.due_date)}</div>
+        <div class="secondary">${escapeHtml(inv.client_name)} · created ${formatDate(inv.created_at)} · due ${formatDate(inv.due_date)}${inv.first_viewed_at ? ` · <span title="Viewed by client">👁 viewed</span>` : ""}</div>
       </div>
       <div style="display:flex; align-items:center; gap:14px; flex-shrink:0;">
         <span class="status-pill ${inv.status}">${inv.status}</span>
