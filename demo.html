@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ledger — Create an invoice in a minute</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .hero { text-align: center; max-width: 560px; margin: 0 auto 32px; }
+  .hero h1 { font-size: 30px; margin-bottom: 8px; }
+  .hero p { color: var(--slate); font-size: 15px; }
+  .demo-shell { max-width: 960px; margin: 0 auto; }
+  .demo-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
+  @media (min-width: 860px) { .demo-grid { grid-template-columns: 1fr 1fr; align-items: start; } }
+
+  /* Preview panel — matches the actual sent-invoice look (tan/gold) so this is a real preview, not a mockup */
+  .preview-wrap { background: #F0ECE3; border-radius: 8px; padding: 16px; }
+  .preview-doc { background: #fff; border-radius: 4px; overflow: hidden; font-family: 'Inter', sans-serif; color: #241F19; }
+  .preview-gold-bar { height: 6px; background: #B08D57; }
+  .preview-pad { padding: 22px 20px; }
+  .preview-label { font-size: 9px; letter-spacing: .08em; text-transform: uppercase; color: #B08D57; font-weight: 600; }
+  .preview-h1 { font-family: 'Source Serif 4', serif; font-size: 26px; color: #B08D57; margin: 0 0 12px; }
+  .preview-meta { font-size: 13px; margin-bottom: 8px; }
+  .preview-table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 16px 0; }
+  .preview-table th { text-align: left; font-size: 9px; letter-spacing: .05em; text-transform: uppercase; color: #B08D57; border-bottom: 1.5px solid #B08D57; padding-bottom: 6px; }
+  .preview-table td { padding: 8px 0; border-bottom: 1px solid #E7E1D6; }
+  .preview-table .num { text-align: right; }
+  .preview-total-row { display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; margin-top: 10px; }
+  .preview-bar { background: #F6F1E7; border: 1px solid #E7E1D6; border-radius: 4px; padding: 12px 16px; margin-top: 16px; display: flex; justify-content: space-between; }
+  .preview-bar .amt { color: #B08D57; font-family: 'Source Serif 4', serif; font-weight: 700; font-size: 16px; }
+
+  .cta-banner { background: var(--ink); color: var(--paper); border-radius: 6px; padding: 20px; margin-top: 20px; text-align: center; }
+  .cta-banner p { margin: 0 0 12px; font-size: 14px; }
+  .cta-banner .btn { background: var(--stamp); border-color: var(--stamp); }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar" style="justify-content:space-between;">
+      <div class="brand">Ledger</div>
+      <nav style="display:flex; gap:20px; font-family:var(--font-mono); font-size:12px; letter-spacing:.04em; text-transform:uppercase;">
+        <a href="login.html" class="text-link">Sign in</a>
+        <a href="register.html" class="text-link">Create account</a>
+      </nav>
+    </div>
+
+    <div class="hero">
+      <div class="eyebrow">Try it free — no account needed</div>
+      <h1>Build a real invoice right now</h1>
+      <p>Fill this in and watch it turn into a professional invoice on the right. Nothing's saved until you decide to create an account.</p>
+    </div>
+
+    <div class="demo-shell">
+      <div class="demo-grid">
+        <div class="card">
+          <h3 style="margin-top:0;">Your details</h3>
+          <div class="field-row">
+            <div class="field">
+              <label for="business_name">Your business name</label>
+              <input id="business_name" type="text" placeholder="Your Business" value="Your Business" />
+            </div>
+            <div class="field">
+              <label for="currency">Currency</label>
+              <input id="currency" type="text" maxlength="3" value="USD" style="text-transform:uppercase;" />
+            </div>
+          </div>
+
+          <h3>Client</h3>
+          <div class="field-row">
+            <div class="field">
+              <label for="client_name">Client name</label>
+              <input id="client_name" type="text" placeholder="Acme Ltd" value="Acme Ltd" />
+            </div>
+            <div class="field">
+              <label for="client_email">Client email</label>
+              <input id="client_email" type="email" placeholder="client@acme.com" value="client@acme.com" />
+            </div>
+          </div>
+
+          <h3>Items</h3>
+          <div id="line-items"></div>
+          <button class="btn btn-ghost" type="button" id="add-line-item" style="margin-bottom:16px;">+ Add item</button>
+
+          <div class="field">
+            <label for="tax_rate">Tax rate (%)</label>
+            <input id="tax_rate" type="number" min="0" step="0.01" value="0" style="width:100px;" />
+          </div>
+        </div>
+
+        <div>
+          <div class="preview-wrap">
+            <div class="preview-doc">
+              <div class="preview-gold-bar"></div>
+              <div class="preview-pad">
+                <div class="preview-h1">Invoice</div>
+                <div class="preview-meta"><span class="preview-label">From</span><br/><strong id="pv-business">Your Business</strong></div>
+                <div class="preview-meta"><span class="preview-label">To</span><br/><strong id="pv-client-name">Acme Ltd</strong><br/><span class="muted" id="pv-client-email" style="font-size:12px;">client@acme.com</span></div>
+
+                <table class="preview-table">
+                  <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Total</th></tr></thead>
+                  <tbody id="pv-items"></tbody>
+                </table>
+
+                <div class="preview-total-row"><span>Total</span><span id="pv-total">$0.00</span></div>
+
+                <div class="preview-bar">
+                  <span class="preview-label">Amount due</span>
+                  <span class="amt" id="pv-amount-due">$0.00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cta-banner">
+            <p>Like what you see? Create a free account to save this, send it to your client, and get paid.</p>
+            <a class="btn" href="register.html">Create free account →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<template id="line-item-template">
+  <div class="line-item-row" style="display:flex; gap:8px; margin-bottom:8px; align-items:flex-end;">
+    <div class="field" style="flex:2; margin-bottom:0;">
+      <input class="li-description" type="text" placeholder="Description" />
+    </div>
+    <div class="field" style="flex:1; margin-bottom:0;">
+      <input class="li-quantity" type="number" min="0" step="1" value="1" placeholder="Qty" />
+    </div>
+    <div class="field" style="flex:1; margin-bottom:0;">
+      <input class="li-unit-price" type="number" min="0" step="0.01" value="0" placeholder="Price" />
+    </div>
+    <button type="button" class="btn btn-ghost li-remove" style="flex-shrink:0;">×</button>
+  </div>
+</template>
+
+<script>
+const lineItemsEl = document.getElementById("line-items");
+const template = document.getElementById("line-item-template");
+
+function addLineItem(prefill) {
+  const row = template.content.cloneNode(true);
+  const el = row.querySelector(".line-item-row");
+  if (prefill) {
+    el.querySelector(".li-description").value = prefill.description;
+    el.querySelector(".li-quantity").value = prefill.quantity;
+    el.querySelector(".li-unit-price").value = prefill.unit_price;
+  }
+  el.querySelector(".li-remove").addEventListener("click", () => {
+    el.remove();
+    updatePreview();
+  });
+  el.querySelectorAll("input").forEach(input => input.addEventListener("input", updatePreview));
+  lineItemsEl.appendChild(el);
+  updatePreview();
+}
+document.getElementById("add-line-item").addEventListener("click", () => addLineItem());
+
+function getLineItems() {
+  return [...lineItemsEl.querySelectorAll(".line-item-row")].map(row => ({
+    description: row.querySelector(".li-description").value.trim() || "Untitled item",
+    quantity: parseFloat(row.querySelector(".li-quantity").value) || 0,
+    unit_price: parseFloat(row.querySelector(".li-unit-price").value) || 0,
+  }));
+}
+
+function money(amount, currency) {
+  return `${currency} ${amount.toFixed(2)}`;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str ?? "";
+  return div.innerHTML;
+}
+
+function updatePreview() {
+  const currency = (document.getElementById("currency").value || "USD").toUpperCase();
+  const items = getLineItems();
+  const taxRate = (parseFloat(document.getElementById("tax_rate").value) || 0) / 100;
+
+  document.getElementById("pv-business").textContent = document.getElementById("business_name").value || "Your Business";
+  document.getElementById("pv-client-name").textContent = document.getElementById("client_name").value || "Client Name";
+  document.getElementById("pv-client-email").textContent = document.getElementById("client_email").value || "";
+
+  document.getElementById("pv-items").innerHTML = items.map(item => `
+    <tr>
+      <td>${escapeHtml(item.description)}</td>
+      <td class="num">${item.quantity}</td>
+      <td class="num">${money(item.unit_price, currency)}</td>
+      <td class="num">${money(item.quantity * item.unit_price, currency)}</td>
+    </tr>
+  `).join("") || `<tr><td colspan="4" class="muted" style="padding:12px 0;">Add an item to see it here</td></tr>`;
+
+  const subtotal = items.reduce((sum, i) => sum + i.quantity * i.unit_price, 0);
+  const total = subtotal * (1 + taxRate);
+  document.getElementById("pv-total").textContent = money(total, currency);
+  document.getElementById("pv-amount-due").textContent = money(total, currency);
+}
+
+["business_name", "currency", "client_name", "client_email", "tax_rate"].forEach(id => {
+  document.getElementById(id).addEventListener("input", updatePreview);
+});
+
+addLineItem({ description: "Design work", quantity: 1, unit_price: 250 });
+</script>
+</body>
+</html>
