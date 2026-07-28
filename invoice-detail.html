@@ -66,45 +66,50 @@ function render(inv) {
     ${inv.status === "DRAFT" ? `<button class="btn btn-ghost" id="delete-btn">Delete</button>` : ""}
     ${inv.status === "SENT" || inv.status === "OVERDUE" ? `<button class="btn" id="mark-paid-btn">Mark as paid</button>` : ""}
     ${inv.status === "SENT" || inv.status === "OVERDUE" ? `<button class="btn btn-ghost" id="cancel-btn">Cancel invoice</button>` : ""}
-    ${inv.status !== "DRAFT" ? `<a class="btn btn-ghost" href="i.html?token=${inv.public_token}" target="_blank">Open link</a>` : ""}
-    <button class="btn btn-ghost" id="download-pdf-btn">Download PDF</button>
+    ${inv.status !== "DRAFT" ? `<button class="btn btn-stamp" id="download-pdf-btn">${inv.pdf_downloaded_at ? "Download PDF again" : "Download PDF to get link"}</button>` : ""}
   `;
-  actionsEl.innerHTML += `<p class="muted" id="pdf-quota-note" style="font-size:12px; width:100%; margin-top:6px;"></p>`;
-  loadPdfQuota();
-
-  const downloadBtn = document.getElementById("download-pdf-btn");
-  downloadBtn.addEventListener("click", async () => {
-    downloadBtn.disabled = true;
-    downloadBtn.textContent = "Downloading…";
-    try {
-      await apiDownload(`/invoices/${invoiceId}/pdf`, `${inv.number}.pdf`);
-      loadPdfQuota();
-    } catch (err) {
-      showError(errorBox, err.message);
-    } finally {
-      downloadBtn.disabled = false;
-      downloadBtn.textContent = "Download PDF";
-    }
-  });
 
   if (inv.status !== "DRAFT") {
-    actionsEl.innerHTML += `
-      <div style="display:flex; gap:8px; align-items:center; margin-top:12px; width:100%;">
-        <input type="text" readonly value="${publicUrl}" id="public-link-input" style="flex:1;" />
-        <button class="btn btn-ghost" id="copy-link-btn" style="flex-shrink:0;">Copy link</button>
-      </div>
-    `;
+    if (inv.pdf_downloaded_at) {
+      actionsEl.innerHTML += `
+        <div style="display:flex; gap:8px; align-items:center; margin-top:12px; width:100%;">
+          <input type="text" readonly value="${publicUrl}" id="public-link-input" style="flex:1;" />
+          <button class="btn btn-ghost" id="copy-link-btn" style="flex-shrink:0;">Copy link</button>
+        </div>
+      `;
+    } else {
+      actionsEl.innerHTML += `<p class="muted" style="font-size:12px; width:100%; margin-top:6px;">Download the PDF once to unlock the shareable link — it'll appear here.</p>`;
+    }
+    actionsEl.innerHTML += `<p class="muted" id="pdf-quota-note" style="font-size:12px; width:100%; margin-top:2px;"></p>`;
+    loadPdfQuota();
+
     const copyBtn = document.getElementById("copy-link-btn");
-    copyBtn.addEventListener("click", async () => {
+    if (copyBtn) {
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(publicUrl);
+          copyBtn.textContent = "Copied!";
+          setTimeout(() => { copyBtn.textContent = "Copy link"; }, 1500);
+        } catch {
+          document.getElementById("public-link-input").select();
+          document.execCommand("copy");
+          copyBtn.textContent = "Copied!";
+          setTimeout(() => { copyBtn.textContent = "Copy link"; }, 1500);
+        }
+      });
+    }
+
+    const downloadBtn = document.getElementById("download-pdf-btn");
+    downloadBtn.addEventListener("click", async () => {
+      downloadBtn.disabled = true;
+      downloadBtn.textContent = "Downloading…";
       try {
-        await navigator.clipboard.writeText(publicUrl);
-        copyBtn.textContent = "Copied!";
-        setTimeout(() => { copyBtn.textContent = "Copy link"; }, 1500);
-      } catch {
-        document.getElementById("public-link-input").select();
-        document.execCommand("copy");
-        copyBtn.textContent = "Copied!";
-        setTimeout(() => { copyBtn.textContent = "Copy link"; }, 1500);
+        await apiDownload(`/invoices/${invoiceId}/pdf`, `${inv.number}.pdf`);
+        loadInvoice(); // re-fetch so pdf_downloaded_at is set and the link reveals
+      } catch (err) {
+        showError(errorBox, err.message);
+        downloadBtn.disabled = false;
+        downloadBtn.textContent = inv.pdf_downloaded_at ? "Download PDF again" : "Download PDF to get link";
       }
     });
   }
