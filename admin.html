@@ -36,6 +36,20 @@
     <div id="stats" class="stat-grid"></div>
 
     <div class="list-head" style="margin-top:8px;">
+      <h3 style="margin:0;">Your bank details</h3>
+    </div>
+    <div class="card" id="platform-settings-card" style="margin-bottom:24px;">
+      <p class="muted">Loading…</p>
+    </div>
+
+    <div class="list-head" style="margin-top:8px;">
+      <h3 style="margin:0;">Upgrade requests</h3>
+    </div>
+    <div id="upgrade-requests-list" style="margin-bottom:24px;">
+      <p class="muted">Loading…</p>
+    </div>
+
+    <div class="list-head" style="margin-top:8px;">
       <h3 style="margin:0;">Default weekly limits per plan</h3>
     </div>
     <div class="card" id="plan-limits-card" style="margin-bottom:24px;">
@@ -330,9 +344,124 @@ document.querySelectorAll("[data-login-range]").forEach(btn => {
   });
 });
 
+async function loadPlatformSettings() {
+  try {
+    const { data } = await apiFetch("/admin/platform-settings");
+    const card = document.getElementById("platform-settings-card");
+    card.innerHTML = `
+      <p class="muted" style="margin-top:0;">Shown to tenants who request an upgrade — this is where they send payment.</p>
+      <div class="field-row">
+        <div class="field">
+          <label>Bank name</label>
+          <input type="text" id="pf-bank-name" value="${data.bank_name || ""}" />
+        </div>
+        <div class="field">
+          <label>Account name</label>
+          <input type="text" id="pf-account-name" value="${data.account_name || ""}" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Account number</label>
+          <input type="text" id="pf-account-number" value="${data.account_number || ""}" />
+        </div>
+        <div class="field">
+          <label>Routing/IBAN <span class="muted">(optional)</span></label>
+          <input type="text" id="pf-routing" value="${data.routing_number || ""}" />
+        </div>
+      </div>
+      <div class="field">
+        <label>SWIFT/BIC <span class="muted">(optional)</span></label>
+        <input type="text" id="pf-swift" value="${data.swift_code || ""}" />
+      </div>
+      <button class="btn btn-ghost" id="save-platform-settings-btn">Save</button>
+      <span class="muted" id="platform-settings-status" style="font-size:12px; margin-left:8px;"></span>
+    `;
+    document.getElementById("save-platform-settings-btn").addEventListener("click", savePlatformSettings);
+  } catch (err) {
+    showError(errorBox, err.message);
+  }
+}
+
+async function savePlatformSettings() {
+  const statusEl = document.getElementById("platform-settings-status");
+  const btn = document.getElementById("save-platform-settings-btn");
+  btn.disabled = true;
+  statusEl.textContent = "Saving…";
+  try {
+    await apiFetch("/admin/platform-settings", {
+      method: "PUT",
+      body: {
+        bank_name: document.getElementById("pf-bank-name").value.trim() || null,
+        account_name: document.getElementById("pf-account-name").value.trim() || null,
+        account_number: document.getElementById("pf-account-number").value.trim() || null,
+        routing_number: document.getElementById("pf-routing").value.trim() || null,
+        swift_code: document.getElementById("pf-swift").value.trim() || null,
+      },
+    });
+    statusEl.textContent = "Saved";
+    setTimeout(() => { statusEl.textContent = ""; }, 1500);
+  } catch (err) {
+    statusEl.textContent = "";
+    showError(errorBox, err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function loadUpgradeRequests() {
+  try {
+    const { data } = await apiFetch("/admin/upgrade-requests?status=PENDING");
+    const listEl = document.getElementById("upgrade-requests-list");
+    if (!data.length) {
+      listEl.innerHTML = `<p class="muted">No pending upgrade requests.</p>`;
+      return;
+    }
+    listEl.innerHTML = data.map(r => `
+      <div class="card" style="margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+          <div>
+            <div class="primary">${escapeHtml(r.tenant_name)} → ${r.requested_plan}</div>
+            <div class="secondary">${escapeHtml(r.owner_email || "")} · currently ${r.current_plan} · requested ${formatDate(r.created_at)}</div>
+          </div>
+          <div style="display:flex; gap:8px; flex-shrink:0;">
+            <button class="btn btn-stamp" data-approve="${r.id}">Approve</button>
+            <button class="btn btn-ghost" data-reject="${r.id}">Reject</button>
+          </div>
+        </div>
+        ${r.note ? `<p class="muted" style="white-space:pre-line; margin-top:10px;">${escapeHtml(r.note)}</p>` : ""}
+        ${r.image_base64 ? `<img src="${r.image_base64}" style="max-width:200px; border:1px solid var(--paper-line); border-radius:4px; margin-top:8px;" />` : ""}
+      </div>
+    `).join("");
+
+    listEl.querySelectorAll("[data-approve]").forEach(btn => {
+      btn.addEventListener("click", () => reviewUpgradeRequest(btn.dataset.approve, "approve", btn));
+    });
+    listEl.querySelectorAll("[data-reject]").forEach(btn => {
+      btn.addEventListener("click", () => reviewUpgradeRequest(btn.dataset.reject, "reject", btn));
+    });
+  } catch (err) {
+    showError(errorBox, err.message);
+  }
+}
+
+async function reviewUpgradeRequest(id, action, btn) {
+  btn.disabled = true;
+  try {
+    await apiFetch(`/admin/upgrade-requests/${id}/${action}`, { method: "POST" });
+    loadUpgradeRequests();
+    loadTenants();
+  } catch (err) {
+    showError(errorBox, err.message);
+    btn.disabled = false;
+  }
+}
+
 loadStats();
 loadPlanLimits();
 loadPdfPlanLimits();
+loadPlatformSettings();
+loadUpgradeRequests();
 loadLoginActivity();
 loadTenants();
 </script>

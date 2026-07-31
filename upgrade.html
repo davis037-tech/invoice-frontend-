@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Upgrade — Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .plan-grid { display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:24px; }
+  @media (min-width:640px) { .plan-grid { grid-template-columns:repeat(3,1fr); } }
+  .plan-card { border:1px solid var(--paper-line); border-radius:var(--radius); padding:20px; text-align:center; }
+  .plan-card.current { border-color:var(--ink); border-width:2px; }
+  .plan-card h3 { margin:0 0 4px; font-size:18px; }
+  .plan-card .limits { font-size:13px; color:var(--slate); margin-bottom:12px; }
+  .status-banner { padding:14px 16px; border-radius:var(--radius); margin-bottom:20px; font-size:14px; }
+  .status-banner.pending { background:#FBF3E3; border:1px solid #E3C98A; }
+  .status-banner.approved { background:#E4EFE1; border:1px solid #A8CC9A; }
+  .status-banner.rejected { background:#FBEAEA; border:1px solid #E3B8B8; }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar" id="topbar"></div>
+
+    <div class="list-head">
+      <h1 style="font-size:22px;">Upgrade</h1>
+    </div>
+
+    <div id="error-box"></div>
+    <div id="status-banner"></div>
+
+    <div id="plan-grid" class="plan-grid">
+      <p class="muted">Loading…</p>
+    </div>
+
+    <div class="card" id="request-card" style="display:none;">
+      <h3 style="margin-top:0;">Pay by bank transfer</h3>
+      <div id="bank-details-box"></div>
+
+      <h3>Then let us know</h3>
+      <form id="upgrade-form">
+        <div class="field">
+          <label for="requested-plan">Upgrading to</label>
+          <select id="requested-plan" required>
+            <option value="PRO">PRO</option>
+            <option value="TEAM">TEAM</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="upgrade-note">Transaction reference / note</label>
+          <textarea id="upgrade-note" rows="3" placeholder="e.g. Bank ref #123456, transferred 11 Jul"></textarea>
+        </div>
+        <div class="field">
+          <label for="upgrade-image">Receipt photo <span class="muted">(optional)</span></label>
+          <input id="upgrade-image" type="file" accept="image/*" />
+        </div>
+        <button class="btn btn-stamp" type="submit" id="upgrade-submit-btn">Submit for review</button>
+      </form>
+    </div>
+  </div>
+
+<script src="api.js"></script>
+<script src="nav.js"></script>
+<script>
+Auth.requireLogin();
+renderTopbar("upgrade");
+
+const errorBox = document.getElementById("error-box");
+const statusBanner = document.getElementById("status-banner");
+const planGrid = document.getElementById("plan-grid");
+const requestCard = document.getElementById("request-card");
+
+async function load() {
+  try {
+    const [platformData, myRequest] = await Promise.all([
+      apiFetch("/billing/platform-bank-details"),
+      apiFetch("/billing/upgrade-request"),
+    ]);
+    renderPlans(platformData.data.plan_limits);
+    renderBankDetails(platformData.data.bank_details);
+    renderStatus(myRequest.data);
+  } catch (err) {
+    showError(errorBox, err.message);
+  }
+}
+
+function renderPlans(limits) {
+  const user = Auth.getUser();
+  planGrid.innerHTML = Object.entries(limits).map(([plan, l]) => `
+    <div class="plan-card">
+      <h3>${plan}</h3>
+      <div class="limits">${l.invoices} invoices/week · ${l.pdfs} PDFs/week</div>
+    </div>
+  `).join("");
+}
+
+function renderBankDetails(bankDetails) {
+  const box = document.getElementById("bank-details-box");
+  if (!bankDetails) {
+    box.innerHTML = `<p class="muted">Bank details haven't been set up yet — contact support.</p>`;
+    requestCard.style.display = "none";
+    return;
+  }
+  box.innerHTML = `<p style="white-space:pre-line;">${escapeHtml(bankDetails)}</p>`;
+}
+
+function renderStatus(req) {
+  if (!req || req.status !== "PENDING") {
+    if (req && req.status === "REJECTED") {
+      statusBanner.innerHTML = `<div class="status-banner rejected">Your last upgrade request was rejected. You can submit a new one below.</div>`;
+    } else if (req && req.status === "APPROVED") {
+      statusBanner.innerHTML = `<div class="status-banner approved">Your last upgrade to ${req.requested_plan} was approved. You can request another upgrade any time.</div>`;
+    }
+    requestCard.style.display = "block";
+    return;
+  }
+  statusBanner.innerHTML = `<div class="status-banner pending">Your upgrade request to ${req.requested_plan} is awaiting review, submitted ${formatDate(req.created_at)}.</div>`;
+  requestCard.style.display = "none";
+}
+
+document.getElementById("upgrade-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  errorBox.innerHTML = "";
+
+  const requestedPlan = document.getElementById("requested-plan").value;
+  const note = document.getElementById("upgrade-note").value.trim();
+  const file = document.getElementById("upgrade-image").files[0];
+
+  if (!note && !file) {
+    showError(errorBox, "Add a reference note or a receipt photo.");
+    return;
+  }
+  if (file && file.size > 3 * 1024 * 1024) {
+    showError(errorBox, "That photo is too large — please use one under 3MB.");
+    return;
+  }
+
+  const submitBtn = document.getElementById("upgrade-submit-btn");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Submitting…";
+
+  try {
+    const image_base64 = file ? await fileToDataUrl(file) : null;
+    await apiFetch("/billing/upgrade-request", {
+      method: "POST",
+      body: { requested_plan: requestedPlan, note: note || null, image_base64 },
+    });
+    load();
+  } catch (err) {
+    showError(errorBox, err.message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Submit for review";
+  }
+});
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+load();
+</script>
+</body>
+</html>
