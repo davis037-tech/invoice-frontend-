@@ -219,6 +219,19 @@
             </div>
           </div>
 
+          <div class="card" id="demo-download-card" style="margin-bottom:16px;">
+            <div id="demo-download-error"></div>
+            <button class="btn btn-cta" id="demo-download-btn" style="width:100%; text-align:center;">Download PDF &amp; get shareable link</button>
+            <div id="demo-link-box" style="display:none; margin-top:12px;">
+              <p class="muted" style="font-size:12px; margin-bottom:6px;">Your invoice link:</p>
+              <div style="display:flex; gap:8px;">
+                <input type="text" readonly id="demo-link-input" style="flex:1; font-size:12px;" />
+                <button class="btn btn-ghost" id="demo-copy-btn" style="flex-shrink:0;">Copy</button>
+              </div>
+              <p class="muted" style="font-size:12px; margin-top:10px;">That's your one free demo invoice — <a href="register.html">create an account</a> to make more.</p>
+            </div>
+          </div>
+
           <div class="cta-banner">
             <p>Like what you see? Create a free account to save this, send it to your client, and get paid.</p>
             <a class="btn" href="register.html">Create free account →</a>
@@ -269,6 +282,7 @@
   </div>
 </template>
 
+<script src="api.js"></script>
 <script>
 const lineItemsEl = document.getElementById("line-items");
 const template = document.getElementById("line-item-template");
@@ -338,6 +352,98 @@ function updatePreview() {
 });
 
 addLineItem({ description: "Design work", quantity: 1, unit_price: 250 });
+
+const DEMO_STORAGE_KEY = "ledger_demo_invoice";
+const downloadBtn = document.getElementById("demo-download-btn");
+const linkBox = document.getElementById("demo-link-box");
+const linkInput = document.getElementById("demo-link-input");
+const demoErrorBox = document.getElementById("demo-download-error");
+
+function showDemoUsedState(link) {
+  downloadBtn.style.display = "none";
+  linkBox.style.display = "block";
+  linkInput.value = link;
+}
+
+function checkExistingDemo() {
+  const saved = localStorage.getItem(DEMO_STORAGE_KEY);
+  if (saved) {
+    try {
+      const { link } = JSON.parse(saved);
+      if (link) showDemoUsedState(link);
+    } catch (_) {}
+  }
+}
+checkExistingDemo();
+
+downloadBtn.addEventListener("click", async () => {
+  demoErrorBox.innerHTML = "";
+  const items = getLineItems();
+  if (!items.length) {
+    showError(demoErrorBox, "Add at least one item first.");
+    return;
+  }
+
+  downloadBtn.disabled = true;
+  downloadBtn.textContent = "Generating…";
+
+  const payload = {
+    business_name: document.getElementById("business_name").value.trim() || "Your Business",
+    client_name: document.getElementById("client_name").value.trim(),
+    client_email: document.getElementById("client_email").value.trim(),
+    currency: document.getElementById("currency").value.trim() || "USD",
+    tax_rate: (parseFloat(document.getElementById("tax_rate").value) || 0) / 100,
+    items,
+  };
+
+  try {
+    const res = await fetch(`${API_BASE}/public/demo-invoice`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      let msg = `Request failed (${res.status})`;
+      try { const data = await res.json(); msg = data.error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+
+    const link = res.headers.get("X-Invoice-Link");
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "invoice-demo.pdf";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+    if (link) {
+      localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ link, at: Date.now() }));
+      showDemoUsedState(link);
+    }
+  } catch (err) {
+    showError(demoErrorBox, err.message);
+    downloadBtn.disabled = false;
+    downloadBtn.textContent = "Download PDF & get shareable link";
+  }
+});
+
+document.getElementById("demo-copy-btn").addEventListener("click", async () => {
+  const btn = document.getElementById("demo-copy-btn");
+  try {
+    await navigator.clipboard.writeText(linkInput.value);
+    btn.textContent = "Copied!";
+    setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+  } catch {
+    linkInput.select();
+    document.execCommand("copy");
+    btn.textContent = "Copied!";
+    setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+  }
+});
 
 const navToggle = document.getElementById("nav-toggle");
 const topbarNav = document.getElementById("topbar-nav");
