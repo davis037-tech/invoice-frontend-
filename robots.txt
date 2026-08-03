@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard.html
+Disallow: /invoices.html
+Disallow: /invoice-detail.html
+Disallow: /invoice-new.html
+Disallow: /clients.html
+Disallow: /settings.html
+Disallow: /payments.html
+Disallow: /admin.html
+Disallow: /upgrade.html
+Disallow: /i.html
+
+Sitemap: https://ledger-20.netlify.app/sitemap.xml
