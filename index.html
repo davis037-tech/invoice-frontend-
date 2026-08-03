@@ -81,7 +81,8 @@
   <div class="shell">
     <div class="topbar" style="justify-content:space-between;">
       <div class="brand">Ledger</div>
-      <nav style="display:flex; gap:20px; font-family:var(--font-mono); font-size:12px; letter-spacing:.04em; text-transform:uppercase;">
+      <button class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false">Menu</button>
+      <nav id="topbar-nav">
         <a href="login.html" class="text-link">Sign in</a>
         <a href="register.html" class="text-link">Create account</a>
       </nav>
@@ -279,6 +280,19 @@ function updatePreview() {
 });
 
 addLineItem({ description: "Design work", quantity: 1, unit_price: 250 });
+
+const navToggle = document.getElementById("nav-toggle");
+const topbarNav = document.getElementById("topbar-nav");
+navToggle.addEventListener("click", () => {
+  const isOpen = topbarNav.classList.toggle("open");
+  navToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+});
+document.addEventListener("click", (e) => {
+  if (!document.querySelector(".topbar").contains(e.target)) {
+    topbarNav.classList.remove("open");
+    navToggle.setAttribute("aria-expanded", "false");
+  }
+});
 </script>
 </body>
 </html>
