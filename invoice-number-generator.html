@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Free Invoice Number Generator | Ledger</title>
+<meta name="description" content="Generate a clean, sequential invoice numbering format for your business — free tool, no signup. Pick a prefix, starting number, and padding, then copy your invoice numbers." />
+<link rel="canonical" href="https://ledger-20.netlify.app/invoice-number-generator.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .logo-mark { display: flex; align-items: center; gap: 10px; }
+  .logo-box { width: 30px; height: 30px; background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: center; font-family: var(--font-serif); font-weight: 700; font-size: 15px; border-radius: 4px; }
+  .btn-cta { background: var(--stamp); color: #fff; border: 1px solid var(--stamp); border-radius: var(--radius); padding: 10px 18px; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; text-decoration: none; display: inline-block; font-weight: 600; }
+  .btn-cta:hover { background: #8f3532; border-color: #8f3532; }
+  .article { max-width: 640px; margin: 0 auto; }
+  .article h1 { font-size: 28px; margin-bottom: 8px; }
+  .article .lede { color: var(--slate); font-size: 16px; margin-bottom: 32px; }
+  .article h2 { font-size: 19px; margin-top: 36px; }
+  .article p, .article li { font-size: 15px; line-height: 1.6; color: var(--ink); }
+  .result-display { font-family: var(--font-mono); font-size: 32px; font-weight: 600; text-align: center; padding: 24px; background: #F6F1E7; border: 1px solid var(--paper-line); border-radius: 6px; margin: 16px 0; }
+  .list-preview { font-family: var(--font-mono); font-size: 14px; color: var(--slate); line-height: 2; }
+  .related-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .related-links a { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar" style="justify-content:space-between;">
+      <a href="index.html" style="text-decoration:none;"><div class="logo-mark"><div class="logo-box">L</div><div class="brand">Ledger</div></div></a>
+      <nav style="display:flex; align-items:center; gap:16px;">
+        <a href="login.html" class="text-link">Sign in</a>
+        <a href="register.html" class="btn-cta">Start free</a>
+      </nav>
+    </div>
+
+    <div class="article">
+      <div class="eyebrow">Free tool</div>
+      <h1>Invoice Number Generator</h1>
+      <p class="lede">Pick a format below and get a clean, sequential invoice numbering system for your business — copy it straight in.</p>
+
+      <div class="card">
+        <div class="field-row">
+          <div class="field">
+            <label for="prefix">Prefix</label>
+            <input id="prefix" type="text" value="INV" maxlength="10" />
+          </div>
+          <div class="field">
+            <label for="start-num">Starting number</label>
+            <input id="start-num" type="number" min="1" value="1" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="padding">Digits (padding)</label>
+          <select id="padding">
+            <option value="3">3 — 001</option>
+            <option value="4" selected>4 — 0001</option>
+            <option value="5">5 — 00001</option>
+          </select>
+        </div>
+        <label style="font-size:12px; color:var(--slate); display:flex; align-items:center; gap:6px; margin-bottom:12px;">
+          <input type="checkbox" id="include-year" style="width:auto;" /> Include current year (e.g. INV-2026-0001)
+        </label>
+      </div>
+
+      <div class="result-display" id="result">INV-0001</div>
+      <div style="text-align:center; margin-bottom:24px;">
+        <button class="btn btn-ghost" id="copy-btn">Copy</button>
+      </div>
+
+      <h2>Next 5 numbers in this sequence</h2>
+      <div class="list-preview" id="preview-list"></div>
+
+      <h2>Why invoice numbering matters</h2>
+      <p>A consistent format makes invoices easy to track, easy to reference in emails, and — in many countries — is required for tax and accounting purposes. Keep it simple: a short prefix, an optional year, and a padded sequential number. Avoid reusing numbers, and avoid skipping around.</p>
+
+      <div class="card" style="margin-top:24px; text-align:center;">
+        <p style="margin-top:0;">Ledger numbers your invoices automatically — no spreadsheet needed.</p>
+        <a href="index.html" class="btn-cta">Try it free →</a>
+      </div>
+
+      <h2>Related</h2>
+      <div class="related-links">
+        <a href="invoice-template.html">Free invoice template</a>
+        <a href="how-to-create-an-invoice.html">How to create an invoice</a>
+        <a href="index.html">Try Ledger free</a>
+      </div>
+    </div>
+  </div>
+
+<script>
+const prefixEl = document.getElementById("prefix");
+const startEl = document.getElementById("start-num");
+const paddingEl = document.getElementById("padding");
+const yearEl = document.getElementById("include-year");
+const resultEl = document.getElementById("result");
+const previewEl = document.getElementById("preview-list");
+
+function buildNumber(n) {
+  const prefix = (prefixEl.value.trim() || "INV").toUpperCase();
+  const padding = parseInt(paddingEl.value, 10);
+  const padded = String(n).padStart(padding, "0");
+  const year = yearEl.checked ? `${new Date().getFullYear()}-` : "";
+  return `${prefix}-${year}${padded}`;
+}
+
+function update() {
+  const start = Math.max(1, parseInt(startEl.value, 10) || 1);
+  resultEl.textContent = buildNumber(start);
+  previewEl.innerHTML = Array.from({ length: 5 }, (_, i) => buildNumber(start + i)).join("<br/>");
+}
+
+[prefixEl, startEl, paddingEl, yearEl].forEach(el => el.addEventListener("input", update));
+update();
+
+document.getElementById("copy-btn").addEventListener("click", async () => {
+  const btn = document.getElementById("copy-btn");
+  try {
+    await navigator.clipboard.writeText(resultEl.textContent);
+    btn.textContent = "Copied!";
+    setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+  } catch {
+    btn.textContent = "Copy failed";
+    setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+  }
+});
+</script>
+</body>
+</html>
