@@ -14,7 +14,10 @@
 
     <div class="list-head">
       <h1 style="font-size:22px;">Invoices</h1>
-      <a class="btn" href="invoice-new.html">+ New invoice</a>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-ghost" id="export-all-btn">Export all to Excel</button>
+        <a class="btn" href="invoice-new.html">+ New invoice</a>
+      </div>
     </div>
 
     <div style="margin-bottom:16px; display:flex; gap:8px; flex-wrap:wrap;" id="status-filters">
@@ -35,6 +38,7 @@
   </div>
 
 <script src="api.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="nav.js"></script>
 <script>
 Auth.requireLogin();
@@ -111,6 +115,30 @@ function renderInvoices(invoices) {
   `;
   }).join("");
 }
+
+document.getElementById("export-all-btn").addEventListener("click", () => {
+  if (!allInvoices.length) {
+    showError(errorBox, "No invoices to export yet.");
+    return;
+  }
+  const rows = [
+    ["Invoice #", "Client", "Client Email", "Issue Date", "Due Date", "Total", "Currency", "Status"],
+    ...allInvoices.map(inv => [
+      inv.number,
+      inv.client_name,
+      inv.client_email,
+      formatDate(inv.created_at),
+      formatDate(inv.due_date),
+      Number(inv.total),
+      inv.currency,
+      inv.status,
+    ]),
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Invoices");
+  XLSX.writeFile(wb, "Ledger-Invoices.xlsx");
+});
 
 loadInvoices();
 </script>
