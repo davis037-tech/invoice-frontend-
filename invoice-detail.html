@@ -66,6 +66,7 @@ function render(inv) {
     ${inv.status === "DRAFT" ? `<a class="btn btn-ghost" href="invoice-new.html?edit=${inv.id}">Edit</a>` : ""}
     ${inv.status === "DRAFT" ? `<button class="btn btn-ghost" id="delete-btn">Delete</button>` : ""}
     ${inv.status === "SENT" || inv.status === "OVERDUE" ? `<button class="btn" id="mark-paid-btn">Mark as paid</button>` : ""}
+    ${inv.status === "SENT" || inv.status === "OVERDUE" ? `<button class="btn btn-ghost" id="send-reminder-btn">Send reminder</button>` : ""}
     ${inv.status === "SENT" || inv.status === "OVERDUE" ? `<button class="btn btn-ghost" id="cancel-btn">Cancel invoice</button>` : ""}
     ${inv.status !== "DRAFT" ? `<button class="btn btn-stamp" id="download-pdf-btn">${inv.pdf_downloaded_at ? "Download PDF again" : "Download PDF to get link"}</button>` : ""}
     <button class="btn btn-ghost" id="export-excel-btn">Export to Excel</button>
@@ -217,6 +218,23 @@ function render(inv) {
         showError(errorBox, err.message);
         markPaidBtn.disabled = false;
         markPaidBtn.textContent = "Mark as paid";
+      }
+    });
+  }
+
+  const sendReminderBtn = document.getElementById("send-reminder-btn");
+  if (sendReminderBtn) {
+    sendReminderBtn.addEventListener("click", async () => {
+      sendReminderBtn.disabled = true;
+      sendReminderBtn.textContent = "Sending…";
+      try {
+        await apiFetch(`/invoices/${invoiceId}/send-reminder`, { method: "POST" });
+        sendReminderBtn.textContent = "Reminder sent!";
+        setTimeout(() => loadInvoice(), 1200);
+      } catch (err) {
+        showError(errorBox, err.message);
+        sendReminderBtn.disabled = false;
+        sendReminderBtn.textContent = "Send reminder";
       }
     });
   }
