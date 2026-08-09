@@ -348,6 +348,8 @@ input:focus, select:focus, textarea:focus {
   border-bottom: 2px solid var(--ink);
 }
 
+.invoice-head-right { text-align: right; }
+
 @media (max-width: 480px) {
   .stamp {
     width: 84px;
@@ -357,6 +359,50 @@ input:focus, select:focus, textarea:focus {
     font-size: 12px;
   }
   .invoice-head { padding-right: 96px; }
+}
+
+/* ===== Invoice detail page — mobile ===== */
+@media (max-width: 640px) {
+  .list-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  #actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  #actions .btn {
+    flex: 1 1 auto;
+    text-align: center;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 560px) {
+  .invoice-doc { padding: 24px 18px; }
+  .invoice-head {
+    flex-direction: column;
+    gap: 18px;
+    padding-right: 90px; /* stamp still floats top-right, keep it clear */
+  }
+  .invoice-head-right {
+    text-align: left;
+  }
+  table.line-items {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+  table.line-items th, table.line-items td {
+    padding: 8px 6px;
+  }
+  .totals {
+    width: 100%;
+    max-width: 280px;
+  }
 }
 
 .invoice-head .num {

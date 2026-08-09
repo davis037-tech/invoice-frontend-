@@ -138,7 +138,7 @@ function render(inv) {
           <div class="muted">${escapeHtml(inv.client_email)}</div>
           ${inv.client_address ? `<div class="muted">${escapeHtml(inv.client_address)}</div>` : ""}
         </div>
-        <div style="text-align:right;">
+        <div class="invoice-head-right">
           <div class="num">${escapeHtml(inv.number)}</div>
           <div class="muted" style="font-size:13px; margin-top:6px;">Issued ${formatDate(inv.issue_date)}</div>
           <div class="muted" style="font-size:13px;">Due ${formatDate(inv.due_date)}</div>

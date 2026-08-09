@@ -55,6 +55,15 @@
         </div>
 
         <h3>Business info <span class="muted" style="font-weight:400;">(optional)</span></h3>
+        <div class="field">
+          <label for="business_logo_input">Logo <span class="muted">(shown on invoices and PDFs)</span></label>
+          <div style="display:flex; align-items:center; gap:14px; margin-top:6px;">
+            <img id="logo-preview" style="display:none; max-width:120px; max-height:60px; border:1px solid var(--paper-line); border-radius:4px;" />
+            <input id="business_logo_input" type="file" accept="image/*" />
+          </div>
+          <p class="muted" style="font-size:12px; margin-top:6px;">PNG or JPG, under 1MB works best.</p>
+          <button type="button" class="btn btn-ghost" id="remove-logo-btn" style="display:none; margin-top:8px;">Remove logo</button>
+        </div>
         <div class="field-row">
           <div class="field">
             <label for="business_name">Business name</label>
@@ -85,6 +94,40 @@ const form = document.getElementById("settings-form");
 const errorBox = document.getElementById("error-box");
 const successBox = document.getElementById("success-box");
 const saveBtn = document.getElementById("save-btn");
+const logoInput = document.getElementById("business_logo_input");
+const logoPreview = document.getElementById("logo-preview");
+const removeLogoBtn = document.getElementById("remove-logo-btn");
+let currentLogo = null;
+
+function showLogoPreview(dataUri) {
+  currentLogo = dataUri;
+  if (dataUri) {
+    logoPreview.src = dataUri;
+    logoPreview.style.display = "block";
+    removeLogoBtn.style.display = "inline-block";
+  } else {
+    logoPreview.style.display = "none";
+    removeLogoBtn.style.display = "none";
+  }
+}
+
+logoInput.addEventListener("change", () => {
+  const file = logoInput.files[0];
+  if (!file) return;
+  if (file.size > 1.5 * 1024 * 1024) {
+    showError(errorBox, "That image is too large — please use one under 1.5MB.");
+    logoInput.value = "";
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => showLogoPreview(reader.result);
+  reader.readAsDataURL(file);
+});
+
+removeLogoBtn.addEventListener("click", () => {
+  showLogoPreview(null);
+  logoInput.value = "";
+});
 
 async function loadSettings() {
   try {
@@ -99,6 +142,7 @@ async function loadSettings() {
     form.business_name.value = s.business_name || "";
     form.currency.value = s.currency || "";
     form.business_address.value = s.business_address || "";
+    showLogoPreview(s.business_logo || null);
   } catch (err) {
     showError(errorBox, err.message);
   }
@@ -121,6 +165,7 @@ form.addEventListener("submit", async (e) => {
     business_name: form.business_name.value.trim() || null,
     currency: form.currency.value.trim().toUpperCase() || null,
     business_address: form.business_address.value.trim() || null,
+    business_logo: currentLogo,
   };
 
   try {
