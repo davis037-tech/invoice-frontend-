@@ -11,6 +11,7 @@
 <body>
   <div class="shell">
     <div class="topbar" id="topbar"></div>
+    <div id="guest-banner"></div>
 
     <div class="list-head">
       <h1 style="font-size:22px;" id="page-heading">New invoice</h1>
@@ -108,10 +109,13 @@
 </template>
 
 <script src="api.js"></script>
+<script src="guest-store.js"></script>
 <script src="nav.js"></script>
 <script>
-Auth.requireLogin();
+const isGuest = Auth.allowGuest();
+if (!isGuest) Auth.requireLogin();
 renderTopbar("invoices");
+if (isGuest) renderGuestBanner();
 
 const params = new URLSearchParams(window.location.search);
 const editId = params.get("edit");
@@ -121,9 +125,13 @@ const template = document.getElementById("line-item-template");
 const errorBox = document.getElementById("error-box");
 
 async function loadQuota() {
+  const note = document.getElementById("quota-note");
+  if (isGuest) {
+    note.textContent = "Browsing as a guest — sign up to send real invoices and get paid.";
+    return;
+  }
   try {
     const { data } = await apiFetch("/invoices/quota");
-    const note = document.getElementById("quota-note");
     note.textContent = `${data.remaining} of ${data.limit} invoices remaining this week`;
     if (data.remaining === 0) note.style.color = "var(--stamp-red, #a33)";
   } catch (err) {
@@ -184,8 +192,8 @@ clientSelect.addEventListener("change", () => {
 
 async function loadClients() {
   try {
-    const data = await apiFetch("/clients/");
-    data.data.forEach(c => {
+    const clients = isGuest ? GuestStore.getClients() : (await apiFetch("/clients/")).data;
+    clients.forEach(c => {
       clientsById[c.id] = c;
       const opt = document.createElement("option");
       opt.value = c.id;
@@ -223,10 +231,16 @@ document.getElementById("invoice-form").addEventListener("submit", async (e) => 
   submitBtn.textContent = editId ? "Saving…" : "Creating…";
 
   try {
-    const data = editId
-      ? await apiFetch(`/invoices/${editId}`, { method: "PUT", body: payload })
-      : await apiFetch("/invoices/", { method: "POST", body: payload });
-    window.location.href = `invoice-detail.html?id=${data.data.id}`;
+    let savedInvoice;
+    if (isGuest) {
+      savedInvoice = GuestStore.saveInvoice({ ...payload, id: editId || undefined });
+    } else {
+      const data = editId
+        ? await apiFetch(`/invoices/${editId}`, { method: "PUT", body: payload })
+        : await apiFetch("/invoices/", { method: "POST", body: payload });
+      savedInvoice = data.data;
+    }
+    window.location.href = `invoice-detail.html?id=${savedInvoice.id}`;
   } catch (err) {
     showError(errorBox, err.message);
     submitBtn.disabled = false;
@@ -241,7 +255,12 @@ async function loadForEdit() {
   document.getElementById("quota-note").style.display = "none";
 
   try {
-    const { data: inv } = await apiFetch(`/invoices/${editId}`);
+    const inv = isGuest ? GuestStore.getInvoice(editId) : (await apiFetch(`/invoices/${editId}`)).data;
+    if (!inv) {
+      showError(errorBox, "Invoice not found.");
+      document.getElementById("invoice-form").style.display = "none";
+      return;
+    }
     if (inv.status !== "DRAFT") {
       showError(errorBox, "Only draft invoices can be edited.");
       document.getElementById("invoice-form").style.display = "none";

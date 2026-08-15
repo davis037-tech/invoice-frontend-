@@ -11,6 +11,7 @@
 <body>
   <div class="shell">
     <div class="topbar" id="topbar"></div>
+    <div id="guest-banner"></div>
 
     <div class="list-head">
       <h1 style="font-size:22px;">Clients</h1>
@@ -56,10 +57,13 @@
   </div>
 
 <script src="api.js"></script>
+<script src="guest-store.js"></script>
 <script src="nav.js"></script>
 <script>
-Auth.requireLogin();
+const isGuest = Auth.allowGuest();
+if (!isGuest) Auth.requireLogin();
 renderTopbar("clients");
+if (isGuest) renderGuestBanner();
 
 const listEl = document.getElementById("clients-list");
 const errorBox = document.getElementById("error-box");
@@ -92,13 +96,16 @@ form.addEventListener("submit", async (e) => {
   errorBox.innerHTML = "";
   const id = document.getElementById("client-id").value;
   const payload = {
+    id: id || undefined,
     name: form.name.value.trim(),
     email: form.email.value.trim(),
     phone: form.phone.value.trim() || null,
     address: form.address.value.trim() || null,
   };
   try {
-    if (id) {
+    if (isGuest) {
+      GuestStore.saveClient(payload);
+    } else if (id) {
       await apiFetch(`/clients/${id}`, { method: "PUT", body: payload });
     } else {
       await apiFetch(`/clients/`, { method: "POST", body: payload });
@@ -113,7 +120,11 @@ form.addEventListener("submit", async (e) => {
 async function deleteClient(id) {
   if (!confirm("Delete this client? This can't be undone.")) return;
   try {
-    await apiFetch(`/clients/${id}`, { method: "DELETE" });
+    if (isGuest) {
+      GuestStore.deleteClient(id);
+    } else {
+      await apiFetch(`/clients/${id}`, { method: "DELETE" });
+    }
     loadClients();
   } catch (err) {
     showError(errorBox, err.message);
@@ -122,8 +133,8 @@ async function deleteClient(id) {
 
 async function loadClients() {
   try {
-    const data = await apiFetch("/clients/");
-    renderClients(data.data);
+    const clients = isGuest ? GuestStore.getClients() : (await apiFetch("/clients/")).data;
+    renderClients(clients);
   } catch (err) {
     showError(errorBox, err.message);
   }

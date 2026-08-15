@@ -25,6 +25,15 @@ const Auth = {
       window.location.href = "login.html";
     }
   },
+  /**
+   * For pages that let guests browse/create without an account (dashboard,
+   * clients, invoices). Doesn't redirect — just tells the caller whether
+   * we're in guest mode so it can route data through GuestStore instead
+   * of the real API.
+   */
+  allowGuest() {
+    return !this.getAccessToken();
+  },
 };
 
 /**

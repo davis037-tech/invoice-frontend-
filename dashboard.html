@@ -18,6 +18,7 @@
 <body>
   <div class="shell">
     <div class="topbar" id="topbar"></div>
+    <div id="guest-banner"></div>
 
     <div class="list-head">
       <h1 style="font-size:22px;">Dashboard</h1>
@@ -37,10 +38,13 @@
   </div>
 
 <script src="api.js"></script>
+<script src="guest-store.js"></script>
 <script src="nav.js"></script>
 <script>
-Auth.requireLogin();
+const isGuest = Auth.allowGuest();
+if (!isGuest) Auth.requireLogin();
 renderTopbar("dashboard");
+if (isGuest) renderGuestBanner();
 
 const statsEl = document.getElementById("stats");
 const attentionEl = document.getElementById("attention-list");
@@ -48,7 +52,7 @@ const errorBox = document.getElementById("error-box");
 
 async function load() {
   try {
-    const { data: invoices } = await apiFetch("/invoices/");
+    const invoices = isGuest ? GuestStore.getInvoices() : (await apiFetch("/invoices/")).data;
     renderStats(invoices);
     renderAttention(invoices);
   } catch (err) {

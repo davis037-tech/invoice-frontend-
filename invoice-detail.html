@@ -11,6 +11,7 @@
 <body>
   <div class="shell">
     <div class="topbar" id="topbar"></div>
+    <div id="guest-banner"></div>
 
     <div class="list-head">
       <a class="text-link" href="invoices.html">← Back to invoices</a>
@@ -24,11 +25,14 @@
   </div>
 
 <script src="api.js"></script>
+<script src="guest-store.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="nav.js"></script>
 <script>
-Auth.requireLogin();
+const isGuest = Auth.allowGuest();
+if (!isGuest) Auth.requireLogin();
 renderTopbar("invoices");
+if (isGuest) renderGuestBanner();
 
 const params = new URLSearchParams(window.location.search);
 const invoiceId = params.get("id");
@@ -38,8 +42,12 @@ const actionsEl = document.getElementById("actions");
 
 async function loadInvoice() {
   try {
-    const data = await apiFetch(`/invoices/${invoiceId}`);
-    render(data.data);
+    const inv = isGuest ? GuestStore.getInvoice(invoiceId) : (await apiFetch(`/invoices/${invoiceId}`)).data;
+    if (!inv) {
+      showError(errorBox, "Invoice not found.");
+      return;
+    }
+    render(inv);
   } catch (err) {
     showError(errorBox, err.message);
   }
@@ -62,7 +70,8 @@ function render(inv) {
   const publicUrl = `${window.location.origin}/i.html?token=${inv.public_token}`;
 
   actionsEl.innerHTML = `
-    ${inv.status === "DRAFT" ? `<button class="btn" id="send-btn">Generate invoice link</button>` : ""}
+    ${inv.status === "DRAFT" && !isGuest ? `<button class="btn" id="send-btn">Generate invoice link</button>` : ""}
+    ${inv.status === "DRAFT" && isGuest ? `<a class="btn btn-stamp" href="register.html">Sign up to send &amp; get paid →</a>` : ""}
     ${inv.status === "DRAFT" ? `<a class="btn btn-ghost" href="invoice-new.html?edit=${inv.id}">Edit</a>` : ""}
     ${inv.status === "DRAFT" ? `<button class="btn btn-ghost" id="delete-btn">Delete</button>` : ""}
     ${inv.status === "SENT" || inv.status === "OVERDUE" ? `<button class="btn" id="mark-paid-btn">Mark as paid</button>` : ""}
@@ -71,6 +80,10 @@ function render(inv) {
     ${inv.status !== "DRAFT" ? `<button class="btn btn-stamp" id="download-pdf-btn">${inv.pdf_downloaded_at ? "Download PDF again" : "Download PDF to get link"}</button>` : ""}
     <button class="btn btn-ghost" id="export-excel-btn">Export to Excel</button>
   `;
+
+  if (isGuest && inv.status === "DRAFT") {
+    actionsEl.innerHTML += `<p class="muted" style="font-size:12px; width:100%; margin-top:6px;">Sending, PDF downloads, and payment tracking need a free account — your draft stays saved in this browser either way.</p>`;
+  }
 
   if (inv.status !== "DRAFT") {
     if (inv.pdf_downloaded_at) {
@@ -249,7 +262,11 @@ function render(inv) {
       if (!confirm("Delete this draft invoice? This can't be undone.")) return;
       deleteBtn.disabled = true;
       try {
-        await apiFetch(`/invoices/${invoiceId}`, { method: "DELETE" });
+        if (isGuest) {
+          GuestStore.deleteInvoice(invoiceId);
+        } else {
+          await apiFetch(`/invoices/${invoiceId}`, { method: "DELETE" });
+        }
         window.location.href = "invoices.html";
       } catch (err) {
         showError(errorBox, err.message);

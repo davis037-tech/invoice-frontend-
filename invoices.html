@@ -11,6 +11,7 @@
 <body>
   <div class="shell">
     <div class="topbar" id="topbar"></div>
+    <div id="guest-banner"></div>
 
     <div class="list-head">
       <h1 style="font-size:22px;">Invoices</h1>
@@ -38,11 +39,14 @@
   </div>
 
 <script src="api.js"></script>
+<script src="guest-store.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="nav.js"></script>
 <script>
-Auth.requireLogin();
+const isGuest = Auth.allowGuest();
+if (!isGuest) Auth.requireLogin();
 renderTopbar("invoices");
+if (isGuest) renderGuestBanner();
 
 const listEl = document.getElementById("invoices-list");
 const errorBox = document.getElementById("error-box");
@@ -72,9 +76,15 @@ function filterBySearch(invoices) {
 
 async function loadInvoices() {
   try {
-    const qs = currentStatus ? `?status=${currentStatus}` : "";
-    const data = await apiFetch(`/invoices/${qs}`);
-    allInvoices = data.data;
+    if (isGuest) {
+      let invoices = GuestStore.getInvoices();
+      if (currentStatus) invoices = invoices.filter(i => i.status === currentStatus);
+      allInvoices = invoices;
+    } else {
+      const qs = currentStatus ? `?status=${currentStatus}` : "";
+      const data = await apiFetch(`/invoices/${qs}`);
+      allInvoices = data.data;
+    }
     renderInvoices(filterBySearch(allInvoices));
   } catch (err) {
     showError(errorBox, err.message);
