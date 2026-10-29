@@ -2,22 +2,22 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="google-site-verification" content="KIhtFshAz3LVe1TcrP-KpUoDiL7UMy0M9YJgMgHciHU" /><title>Ledger — Free Invoice Generator | Create Professional Invoices Online</title>
-<meta name="description" content="Ledger is a free invoice generator: create professional invoices online in under a minute, share an invoice payment link with your client, get automatic payment reminders, and track paid vs unpaid invoices. No account needed to try it." />
+<meta name="google-site-verification" content="KIhtFshAz3LVe1TcrP-KpUoDiL7UMy0M9YJgMgHciHU" /><title>Free Invoice Generator for UK Freelancers | Ledger</title>
+<meta name="description" content="UK freelancer? Create professional invoices with Ledger, share invoice payment links, track views and payment status, and review bank-transfer proof. Available worldwide; free to start." />
 <link rel="canonical" href="https://ledger-20.netlify.app/" /><meta property="og:type" content="website" />
-<meta property="og:title" content="Ledger — Free Invoice Generator" />
-<meta property="og:description" content="Create professional invoices online in under a minute. Share an invoice payment link, get automatic payment reminders, and track paid vs unpaid — free to try, no account needed." />
+<meta property="og:title" content="Free Invoice Generator for UK Freelancers | Ledger" />
+<meta property="og:description" content="Create professional invoices, share invoice payment links, track views and payment status, and review bank-transfer proof. Built with UK freelancers in mind and available worldwide." />
 <meta property="og:url" content="https://ledger-20.netlify.app/" />
 <meta name="twitter:card" content="summary" />
-<meta name="twitter:title" content="Ledger — Free Invoice Generator" />
-<meta name="twitter:description" content="Create professional invoices online in under a minute. Share a payment link, get automatic reminders, track paid vs unpaid." /><script type="application/ld+json">
+<meta name="twitter:title" content="Free Invoice Generator for UK Freelancers | Ledger" />
+<meta name="twitter:description" content="Create professional invoices, share payment links, track invoice views and payment status, and review bank-transfer proof. For UK freelancers and businesses worldwide." /><script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "Ledger",
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
-  "description": "Free invoice generator for freelancers and small businesses. Create professional invoices online, share invoice payment links, and get automatic payment reminders.",
+  "description": "Online invoice maker for UK freelancers and small businesses worldwide. Create professional invoices, share invoice payment links, track views and payment status, and review bank-transfer proof. Automated email reminders are coming soon.",
   "offers": {
     "@type": "Offer",
     "price": "0",
@@ -354,6 +354,198 @@
   .resource-card a:hover {
     text-decoration: underline;
   }
+
+
+  /* ===== Landing-page visual refresh only: behavior and content unchanged ===== */
+  :root {
+    --radius: 12px;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background-color: #f7f8fa;
+    background-image: radial-gradient(circle at 50% 0%, rgba(176,141,87,.10), transparent 34%),
+      linear-gradient(180deg, #fbfaf7 0%, #f7f8fa 55%, #fbfaf7 100%);
+    background-attachment: scroll;
+  }
+
+  .shell {
+    max-width: 1120px;
+    padding: 24px 24px 88px;
+  }
+
+  .topbar {
+    align-items: center;
+    padding: 0 0 18px;
+    margin-bottom: 42px;
+    border-bottom: 1px solid rgba(27,36,48,.12);
+  }
+
+  .logo-box {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    box-shadow: 0 5px 14px rgba(27,36,48,.12);
+  }
+
+  .topbar .brand { font-size: 23px; letter-spacing: -.03em; }
+  .topbar nav { align-items: center; gap: 24px; }
+  .topbar nav a { text-transform: none; letter-spacing: 0; font-family: var(--font-sans); font-size: 13px; }
+  .topbar nav a.btn-cta { color: #fff; border: 1px solid var(--stamp); }
+
+  .btn-cta, .btn, button {
+    transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease;
+  }
+  .btn-cta {
+    border-radius: 10px;
+    padding: 12px 18px;
+    box-shadow: 0 5px 12px rgba(176,65,62,.14);
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: var(--font-sans);
+    font-size: 13px;
+  }
+  .btn-cta:hover, .btn:hover, button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(27,36,48,.12);
+  }
+
+  .hero-v2 {
+    max-width: 760px;
+    margin: 54px auto 30px;
+  }
+  .hero-badge {
+    color: #6d5a3d;
+    background: rgba(255,255,255,.76);
+    border-color: rgba(176,141,87,.30);
+    padding: 8px 15px;
+    margin-bottom: 24px;
+    font-family: var(--font-sans);
+    letter-spacing: 0;
+  }
+  .hero-v2 h1 {
+    font-size: clamp(38px, 6vw, 62px);
+    line-height: 1.06;
+    letter-spacing: -.045em;
+    margin-bottom: 20px;
+  }
+  .hero-v2 p {
+    max-width: 600px;
+    margin: 0 auto 28px;
+    font-size: clamp(16px, 2vw, 19px);
+    line-height: 1.7;
+    color: #626b77;
+  }
+  .btn-cta.btn-lg {
+    max-width: 360px !important;
+    padding: 17px 24px;
+    border-radius: 12px;
+    font-size: 15px;
+    box-shadow: 0 10px 24px rgba(176,65,62,.20);
+  }
+
+  .hero-visual {
+    max-width: 560px;
+    margin: 0 auto 64px;
+  }
+  .preview-wrap {
+    background: linear-gradient(135deg, #eeebe4, #f8f5ef);
+    border: 1px solid rgba(27,36,48,.08);
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 22px 55px rgba(27,36,48,.10);
+  }
+  .preview-doc {
+    border-radius: 9px;
+    box-shadow: 0 8px 28px rgba(27,36,48,.07);
+  }
+  .preview-gold-bar { height: 7px; }
+  .preview-pad { padding: 28px 26px; }
+  .preview-h1 { font-size: 30px; }
+  .hero-visual-tag {
+    left: 28px;
+    bottom: -18px;
+    padding: 9px 15px;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 8px 22px rgba(27,36,48,.10);
+  }
+
+  .list-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 14px;
+    margin-bottom: 14px;
+    border-bottom-color: rgba(27,36,48,.12);
+  }
+  .list-head h3 { font-size: 24px; letter-spacing: -.025em; }
+  .demo-shell { max-width: 1040px; }
+  .demo-grid { gap: 26px; }
+  .card {
+    border: 1px solid rgba(27,36,48,.10);
+    border-radius: 16px;
+    padding: clamp(18px, 3vw, 30px);
+    box-shadow: 0 8px 28px rgba(27,36,48,.045);
+  }
+  .card h3 { font-size: 20px; }
+  .field label, label {
+    color: #4e5865;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  input, select, textarea {
+    border-radius: 9px !important;
+    border-color: #dce0e5 !important;
+    background: #fff;
+    min-height: 42px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #b08d57 !important;
+    box-shadow: 0 0 0 3px rgba(176,141,87,.14);
+  }
+  .btn, button.btn {
+    border-radius: 9px;
+    cursor: pointer;
+  }
+  .btn-ghost { background: #fff; }
+
+  .cta-banner {
+    border-radius: 16px;
+    padding: 28px;
+    background: linear-gradient(135deg, #1b2430, #303d4d);
+    box-shadow: 0 12px 30px rgba(27,36,48,.12);
+  }
+  .how-grid { gap: 18px; }
+  .how-grid > div, .resource-card {
+    background: rgba(255,255,255,.78);
+    border: 1px solid rgba(27,36,48,.08);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .how-grid > div .eyebrow { color: #987746; }
+  .resource-card { padding: 22px; box-shadow: 0 6px 20px rgba(27,36,48,.035); }
+  .resource-card a { color: #1b2430; }
+  .resource-card a strong { text-decoration: underline; text-decoration-color: rgba(176,65,62,.35); text-underline-offset: 3px; }
+  .resource-card a:hover { color: var(--stamp); }
+
+  @media (max-width: 700px) {
+    .shell { padding: 18px 16px 56px; }
+    .topbar { margin-bottom: 28px; padding-bottom: 14px; }
+    .hero-v2 { margin: 38px auto 24px; }
+    .hero-v2 h1 { font-size: clamp(36px, 10vw, 48px); }
+    .hero-v2 p { font-size: 16px; }
+    .hero-visual { margin-bottom: 52px; }
+    .preview-wrap { padding: 12px; }
+    .preview-pad { padding: 20px 16px; }
+    .list-head { align-items: flex-start; flex-direction: column; }
+    .list-head h3 { font-size: 22px; }
+    .cta-banner { padding: 22px 18px; }
+  }
+
 </style></head><body>
   <div class="shell"><div class="topbar" style="justify-content:space-between;">
   <div class="logo-mark">
@@ -372,18 +564,18 @@
 
   <nav id="topbar-nav" style="align-items:center;">
     <a href="login.html" class="text-link">Sign in</a>
-    <a href="dashboard.html" class="btn-cta">Try free, no signup</a>
+    <a href="dashboard.html" class="btn-cta">Try Ledger free</a>
   </nav>
 </div>
 
 <div class="hero-v2">
-  <div class="hero-badge">✦ Built for freelancers &amp; small businesses</div>
+  <div class="hero-badge">✦ Made with UK freelancers in mind · Available worldwide</div>
 
-  <h1>Run your business.<br/>Not your billing.</h1>
+  <h1>Create professional invoices.<br/>Track every payment.</h1>
 
   <p>
-    Create invoices in under a minute, share a payment link,
-    and get paid faster — free to start, no card required.
+    Make professional invoices in minutes, share a payment link,
+    track when clients view invoices, and review payment proof — free to start.
   </p>
 
   <a
@@ -391,7 +583,7 @@
     class="btn-cta btn-lg"
     style="max-width:340px; margin:0 auto; display:block;"
   >
-    Try Ledger free — no signup →
+    Try Ledger free →
   </a>
 </div>
 
@@ -699,8 +891,8 @@
       <div class="eyebrow">03</div>
       <p>
         <strong>Get paid, automatically tracked.</strong>
-        Clients can submit proof of payment, and Ledger sends
-        automatic payment reminders if an invoice goes unpaid.
+        Clients can submit proof of payment, and you can review it
+        while keeping track of invoice status. Automated email reminders are coming soon.
       </p>
     </div>
 
@@ -710,11 +902,10 @@
     class="muted"
     style="font-size:13px; margin-top:32px; max-width:640px;"
   >
-    Ledger is a free invoice generator built for freelancers,
-    agencies, and small businesses who want to create invoices
-    online without paying for expensive invoicing software.
-    No design skills or spreadsheets required — just fill in your
-    details and send.
+    Ledger is an online invoice maker for UK freelancers, sole traders,
+    agencies, and small businesses — and is available to users worldwide.
+    Create professional invoices, share payment links, track invoice views,
+    and review bank-transfer payment proof without a complicated accounting suite.
   </p>
 </div>
 
@@ -744,8 +935,8 @@
     <div>
       <div class="eyebrow">Stay on top of it</div>
       <p>
-        Automatic reminders for overdue invoices, read receipts
-        showing when a client opened it, and exports to Excel.
+        Read receipts showing when a client opened an invoice, invoice-status tracking,
+        and exports to Excel. Automated email reminders — coming soon.
       </p>
     </div>
 
@@ -755,7 +946,7 @@
     class="muted"
     style="font-size:13px; margin-top:16px;"
   >
-    📱 QR code payments — coming soon.
+    ✉️ Automated email reminders — coming soon. · 📱 QR code payments — coming soon.
   </p>
 </div>
 
